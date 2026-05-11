@@ -6,6 +6,8 @@ package.name = aisignal
 
 package.domain = org.stcautotrade
 
+source.dir = .
+
 source.include_exts = py,json
 
 version = 1.0
