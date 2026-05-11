@@ -10,9 +10,11 @@ source.dir = .
 
 source.include_exts = py,json
 
+source.main = main.py
+
 version = 1.0
 
-requirements = python3,kivy,requests
+requirements = python3==3.11.5,kivy==2.3.0,requests
 
 android.accept_sdk_license = True
 
@@ -27,3 +29,5 @@ log_level = 2
 android.api = 31
 android.minapi = 21
 android.ndk = 25b
+
+p4a.branch = master
