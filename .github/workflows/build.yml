@@ -28,12 +28,18 @@ jobs:
           sudo apt update
           sudo apt install -y zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
+      - name: Clean Buildozer cache
+        run: |
+          rm -rf .buildozer
+
       - name: Build APK
         run: |
-          buildozer android debug
+          buildozer -v android debug 2>&1 | tee build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: apk
-          path: bin/*.apk
+          path: |
+            bin/*.apk
+            build.log
