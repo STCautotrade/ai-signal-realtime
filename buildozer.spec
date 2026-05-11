@@ -1,0 +1,21 @@
+[app]
+
+title = AI SIGNAL REALTIME
+
+package.name = aisignal
+
+package.domain = org.stcautotrade
+
+source.include_exts = py,json
+
+version = 1.0
+
+requirements = python3,kivy,requests
+
+orientation = portrait
+
+fullscreen = 0
+
+[buildozer]
+
+log_level = 2
