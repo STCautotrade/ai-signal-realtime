@@ -1,4 +1,5 @@
 import requests
+import time
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -7,48 +8,51 @@ from kivy.core.window import Window
 from datetime import datetime, timedelta
 
 # ======================
-# GITHUB SIGNAL JSON
+# GITHUB SIGNAL
 # ======================
 DATA_URL = "https://raw.githubusercontent.com/STCautotrade/ai-signal-realtime/main/signal.json"
 
 
-class SignalApp(BoxLayout):
+class SignalUI(BoxLayout):
 
     def __init__(self, **kwargs):
-        super().__init__(orientation='vertical', padding=25, spacing=12, **kwargs)
+        super().__init__(orientation='vertical', padding=20, spacing=10, **kwargs)
 
-        # DARK THEME DEFAULT
-        Window.clearcolor = (0.08, 0.08, 0.10, 1)
+        # DARK MODE DEFAULT
+        Window.clearcolor = (0.06, 0.06, 0.08, 1)
 
         # TITLE
         self.title = Label(
-            text="🚨 SIGNAL CRYPTO IDX",
-            font_size=30,
+            text="🚨 AI SIGNAL CRYPTO IDX",
+            font_size=28,
             bold=True
         )
         self.add_widget(self.title)
 
         # CLOCK
-        self.clock = Label(text="", font_size=22)
+        self.clock = Label(text="", font_size=20)
         self.add_widget(self.clock)
 
         # MARKET
-        self.market = Label(text="MARKET: -", font_size=20)
+        self.market = Label(text="MARKET: -", font_size=18)
         self.add_widget(self.market)
 
-        # SIGNAL BIG TEXT
-        self.signal = Label(text="WAITING SIGNAL", font_size=52, bold=True)
+        # BIG SIGNAL
+        self.signal = Label(
+            text="WAITING SIGNAL",
+            font_size=60,
+            bold=True
+        )
         self.add_widget(self.signal)
 
-        # ENTRY TIME
+        # ENTRY
         self.entry = Label(text="ENTRY: -", font_size=22)
         self.add_widget(self.entry)
 
-        # MESSAGE / STATUS
+        # STATUS
         self.status = Label(text="STATUS: CONNECTING...", font_size=16)
         self.add_widget(self.status)
 
-        # SCHEDULE LOOP
         Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 2)
 
@@ -64,8 +68,10 @@ class SignalApp(BoxLayout):
     def load_signal(self, dt):
 
         try:
-            headers = {"User-Agent": "Mozilla/5.0"}
-            r = requests.get(DATA_URL, headers=headers, timeout=8)
+            headers = {"Cache-Control": "no-cache"}
+
+            # 🔥 ANTI CACHE FIX
+            r = requests.get(DATA_URL + "?t=" + str(time.time()), headers=headers, timeout=5)
             data = r.json()
 
             signal = data.get("signal", "WAITING")
@@ -75,7 +81,7 @@ class SignalApp(BoxLayout):
             self.market.text = f"📊 {market}"
 
             # ======================
-            # CONVERT ENTRY +1 MIN
+            # ENTRY +1 MINUTE
             # ======================
             try:
                 t = datetime.strptime(entry_time, "%H:%M")
@@ -85,52 +91,51 @@ class SignalApp(BoxLayout):
                 final_entry = entry_time
 
             # ======================
-            # BUY SIGNAL
+            # BUY MODE
             # ======================
             if signal.upper() == "BUY":
-                Window.clearcolor = (0, 0.5, 0, 1)
+
+                Window.clearcolor = (0.0, 0.6, 0.0, 1)
 
                 self.signal.text = "🟢 BUY NOW"
                 self.entry.text = f"ENTRY BUY DI JAM {final_entry}"
-                self.status.text = "STATUS: CONNECTED"
+                self.status.text = "CONNECTED"
 
             # ======================
-            # SELL SIGNAL
+            # SELL MODE
             # ======================
             elif signal.upper() == "SELL":
-                Window.clearcolor = (0.6, 0, 0, 1)
+
+                Window.clearcolor = (0.6, 0.0, 0.0, 1)
 
                 self.signal.text = "🔴 SELL NOW"
                 self.entry.text = f"ENTRY SELL DI JAM {final_entry}"
-                self.status.text = "STATUS: CONNECTED"
+                self.status.text = "CONNECTED"
 
             # ======================
             # WAITING
             # ======================
             else:
-                Window.clearcolor = (0.08, 0.08, 0.10, 1)
+
+                Window.clearcolor = (0.06, 0.06, 0.08, 1)
 
                 self.signal.text = "WAITING SIGNAL"
                 self.entry.text = "-"
-                self.status.text = "STATUS: NO SIGNAL"
+                self.status.text = "NO SIGNAL"
 
-        # ======================
-        # OFFLINE MODE
-        # ======================
         except:
+
             Window.clearcolor = (0.1, 0.1, 0.12, 1)
 
             self.signal.text = "OFFLINE"
             self.entry.text = "-"
-            self.status.text = "STATUS: NO CONNECTION"
+            self.status.text = "NO CONNECTION"
 
 
-# ======================
-# RUN APP
-# ======================
 class MainApp(App):
+
     def build(self):
-        return SignalApp()
+        return SignalUI()
 
 
 MainApp().run()
