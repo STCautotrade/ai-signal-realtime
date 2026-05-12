@@ -6,35 +6,74 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle, Line
 from datetime import datetime
+
 
 DATA_URL = "http://157.10.252.46:5000/signal"
 
 
 # ======================
-# CARD TEMPLATE
+# ENTRY BOX (RGB EFFECT)
 # ======================
-class Card(BoxLayout):
+class EntryBox(BoxLayout):
+
     def __init__(self, **kwargs):
-        super().__init__(padding=12, **kwargs)
+        super().__init__(orientation='vertical', padding=15, **kwargs)
+
         self.size_hint_y = None
+        self.height = 160
+
+        self.mode = "WAIT"
 
         with self.canvas.before:
-            Color(0.15, 0.15, 0.18, 1)
-            self.bg = RoundedRectangle(radius=[18])
+            self.color = Color(0.2, 0.2, 0.2, 1)
+            self.bg = RoundedRectangle(radius=[20])
 
-        self.bind(pos=self.update_bg, size=self.update_bg)
+        # RGB LINE (ANIMATED BORDER)
+        with self.canvas.after:
+            self.line_color = Color(0, 1, 0, 1)
+            self.border = Line(rounded_rectangle=(0, 0, 0, 0, 20), width=2)
 
-    def set_color(self, r, g, b, a=1):
-        self.canvas.before.clear()
-        with self.canvas.before:
-            Color(r, g, b, a)
-            self.bg = RoundedRectangle(radius=[18])
+        self.bind(pos=self.update_graphics, size=self.update_graphics)
 
-    def update_bg(self, *args):
+        self.label_title = Label(text="MENUNGGU SIGNAL .....", font_size=28, bold=True)
+        self.label_time = Label(text="-", font_size=18)
+
+        self.add_widget(self.label_title)
+        self.add_widget(self.label_time)
+
+        Clock.schedule_interval(self.rgb_animation, 0.1)
+
+    # ======================
+    # UPDATE POSITION
+    # ======================
+    def update_graphics(self, *args):
         self.bg.pos = self.pos
         self.bg.size = self.size
+
+        self.border.rounded_rectangle = (
+            self.x, self.y, self.width, self.height, 20
+        )
+
+    # ======================
+    # RGB ANIMATION SIMULATION
+    # ======================
+    def rgb_animation(self, dt):
+
+        if self.mode == "BUY":
+            self.line_color.rgba = (0, 1, 0, 1)
+
+        elif self.mode == "SELL":
+            self.line_color.rgba = (1, 0, 0, 1)
+
+        else:
+            # cycling RGB effect
+            t = time.time()
+            r = abs((time.time() % 3) - 1.5) / 1.5
+            g = abs((time.time() % 2) - 1) / 1
+            b = abs((time.time() % 4) - 2) / 2
+            self.line_color.rgba = (r, g, b, 1)
 
 
 # ======================
@@ -45,82 +84,47 @@ class SignalUI(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation='vertical', padding=10, spacing=10, **kwargs)
 
-        # 🔥 FIX: BACKGROUND SELALU ABU-ABU
+        # 🔥 BACKGROUND ABU-ABU FIX
         Window.clearcolor = (0.12, 0.12, 0.14, 1)
 
-        self.page = "HOME"
+        self.history = []
 
         # ======================
         # TITLE
         # ======================
         self.title = Label(
             text="🚀 AI SIGNAL PRO",
-            font_size=38,
+            font_size=40,
             bold=True,
             size_hint_y=None,
-            height=55,
-            color=(0.3, 0.8, 1, 1)
+            height=60,
+            color=(0.2, 0.8, 1, 1)
         )
         self.add_widget(self.title)
 
         # ======================
-        # CLOCK CARD
+        # CLOCK
         # ======================
-        self.clock_card = Card()
-        self.clock_card.height = 80
-
-        self.clock = Label(text="00:00:00", font_size=40, bold=True, color=(0, 1, 0.6, 1))
-        self.clock_card.add_widget(self.clock)
-        self.add_widget(self.clock_card)
+        self.clock = Label(text="00:00:00", font_size=36, size_hint_y=None, height=50)
+        self.add_widget(self.clock)
 
         # ======================
         # MARKET
         # ======================
-        self.market = Label(text="📊 MARKET: -", font_size=16, size_hint_y=None, height=30)
+        self.market = Label(text="MARKET: -", size_hint_y=None, height=30)
         self.add_widget(self.market)
 
         # ======================
-        # SIGNAL
+        # ENTRY BOX (🔥 CORE)
         # ======================
-        self.signal = Label(text="MENUNGGU SIGNAL .....", font_size=35, bold=True, size_hint_y=None, height=90)
-        self.add_widget(self.signal)
-
-        # ======================
-        # ENTRY CARD (🔥 INI YANG DIWARNAI)
-        # ======================
-        self.entry_card = Card()
-        self.entry_card.height = 90
-
-        self.entry = Label(text="-", font_size=24, bold=True)
-        self.entry_card.add_widget(self.entry)
-        self.add_widget(self.entry_card)
+        self.entry_box = EntryBox()
+        self.add_widget(self.entry_box)
 
         # ======================
         # HISTORY
         # ======================
-        self.history = Label(text="HISTORY:\n-", font_size=14)
-        self.add_widget(self.history)
-
-        # ======================
-        # NAV
-        # ======================
-        nav = BoxLayout(size_hint_y=None, height=45, spacing=5)
-
-        btn_home = Button(text="HOME")
-        btn_history = Button(text="HISTORY")
-        btn_profile = Button(text="PROFILE")
-
-        btn_home.bind(on_press=lambda x: self.set_page("HOME"))
-        btn_history.bind(on_press=lambda x: self.set_page("HISTORY"))
-        btn_profile.bind(on_press=lambda x: self.set_page("PROFILE"))
-
-        nav.add_widget(btn_home)
-        nav.add_widget(btn_history)
-        nav.add_widget(btn_profile)
-
-        self.add_widget(nav)
-
-        self.history_list = []
+        self.history_label = Label(text="HISTORY:\n-", font_size=14)
+        self.add_widget(self.history_label)
 
         Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 1)
@@ -130,12 +134,6 @@ class SignalUI(BoxLayout):
     # ======================
     def update_clock(self, dt):
         self.clock.text = datetime.now().strftime("%H:%M:%S")
-
-    # ======================
-    # PAGE (optional)
-    # ======================
-    def set_page(self, page):
-        self.page = page
 
     # ======================
     # LOAD SIGNAL
@@ -150,55 +148,47 @@ class SignalUI(BoxLayout):
             market = data.get("market", "-")
             entry_time = data.get("entry_time", "-")
 
-            self.market.text = f"📊 MARKET: {market}"
+            self.market.text = f"MARKET: {market}"
 
             # ======================
             # BUY
             # ======================
             if signal.upper() == "BUY":
 
-                self.signal.text = "ENTRY BUY"
-                self.signal.color = (0, 1, 0.5, 1)
+                self.entry_box.mode = "BUY"
 
-                self.entry.text = f"BUY @ {entry_time}"
+                self.entry_box.label_title.text = "ENTRY BUY"
+                self.entry_box.label_time.text = f"ENTRY BUY DI JAM {entry_time}"
 
-                # 🔥 ENTRY CARD HIJAU
-                self.entry_card.set_color(0.0, 0.6, 0.2, 1)
-
-                self.history_list.insert(0, f"BUY - {entry_time}")
+                self.history.insert(0, f"BUY - {entry_time}")
 
             # ======================
             # SELL
             # ======================
             elif signal.upper() == "SELL":
 
-                self.signal.text = "ENTRY SELL"
-                self.signal.color = (1, 0.2, 0.2, 1)
+                self.entry_box.mode = "SELL"
 
-                self.entry.text = f"SELL @ {entry_time}"
+                self.entry_box.label_title.text = "ENTRY SELL"
+                self.entry_box.label_time.text = f"ENTRY SELL DI JAM {entry_time}"
 
-                # 🔥 ENTRY CARD MERAH
-                self.entry_card.set_color(0.6, 0.0, 0.0, 1)
-
-                self.history_list.insert(0, f"SELL - {entry_time}")
+                self.history.insert(0, f"SELL - {entry_time}")
 
             # ======================
             # WAIT
             # ======================
             else:
 
-                self.signal.text = "MENUNGGU SIGNAL ....."
+                self.entry_box.mode = "WAIT"
 
-                self.entry.text = "-"
+                self.entry_box.label_title.text = "MENUNGGU SIGNAL ....."
+                self.entry_box.label_time.text = "-"
 
-                # 🔥 ENTRY CARD NETRAL
-                self.entry_card.set_color(0.15, 0.15, 0.18, 1)
-
-            self.history.text = "HISTORY:\n" + "\n".join(self.history_list[:6])
+            self.history_label.text = "HISTORY:\n" + "\n".join(self.history[:6])
 
         except Exception as e:
             print("ERROR:", e)
-            self.signal.text = "OFFLINE"
+            self.entry_box.label_title.text = "OFFLINE"
 
 
 class MainApp(App):
