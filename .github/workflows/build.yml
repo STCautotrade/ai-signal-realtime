@@ -5,28 +5,41 @@ on:
     branches:
       - main
 
+# 🔥 WAJIB: FIX ERROR 403 RELEASE
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
+      # ======================
+      # CHECKOUT SOURCE CODE
+      # ======================
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # ======================
+      # SETUP PYTHON
+      # ======================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # ======================
+      # SETUP JAVA
+      # ======================
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # =========================
-      # INSTALL SYSTEM DEPENDENCIES
-      # =========================
+      # ======================
+      # SYSTEM DEPENDENCIES
+      # ======================
       - name: Install system dependencies
         run: |
           sudo apt update
@@ -36,67 +49,41 @@ jobs:
           openjdk-17-jdk autoconf libtool pkg-config \
           libffi-dev libssl-dev ccache
 
-      # =========================
-      # INSTALL PYTHON TOOLS
-      # =========================
+      # ======================
+      # PYTHON DEPENDENCIES
+      # ======================
       - name: Install Python tools
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      # =========================
-      # 🔥 FIX ANDROID SDK (ANTI ERROR 37)
-      # =========================
-      - name: Install Android SDK stable
-        run: |
-          mkdir -p $HOME/android-sdk
-          cd $HOME/android-sdk
-
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-*.zip
-
-          mkdir -p cmdline-tools/latest
-          mv cmdline-tools/* cmdline-tools/latest/ || true
-
-          export ANDROID_SDK_ROOT=$HOME/android-sdk
-          export PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin
-
-          # accept all licenses (FIX ERROR LICENSE)
-          yes | sdkmanager --licenses || true
-
-          # install stable versions ONLY
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-33"
-          sdkmanager "build-tools;33.0.2"
-          sdkmanager "ndk;25.2.9519653"
-
-      # =========================
-      # CLEAN BUILD
-      # =========================
-      - name: Clean build
+      # ======================
+      # CLEAN PROJECT
+      # ======================
+      - name: Clean build folder
         run: |
           rm -rf .buildozer
           rm -rf bin
 
-      # =========================
-      # BUILD APK
-      # =========================
+      # ======================
+      # BUILD APK (BUILD OLEH BUILDOZER)
+      # ======================
       - name: Build APK
         run: |
           buildozer -v android debug
 
-      # =========================
-      # UPLOAD APK
-      # =========================
+      # ======================
+      # UPLOAD APK ARTIFACT
+      # ======================
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: APK
           path: bin/*.apk
 
-      # =========================
-      # AUTO RELEASE APK
-      # =========================
+      # ======================
+      # CREATE GITHUB RELEASE
+      # ======================
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/heads/main')
