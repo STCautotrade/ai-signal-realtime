@@ -4,8 +4,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.core.window import Window
+from kivy.uix.widget import Widget
 from datetime import datetime, timedelta
-import time
 
 # ======================
 # GITHUB SIGNAL
@@ -18,35 +18,58 @@ class SignalApp(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation='vertical', padding=20, spacing=10, **kwargs)
 
+        # ======================
+        # BACKGROUND
+        # ======================
         Window.clearcolor = (0.08, 0.08, 0.10, 1)
 
-        # TITLE
-        self.title = Label(text="🚨 AI SIGNAL CRYPTO IDX", font_size=28, bold=True)
-        self.add_widget(self.title)
+        # ======================
+        # LOGO / HEADER (TIMPUL ABU)
+        # ======================
+        self.logo = Label(
+            text="AI SIGNAL PRO",
+            font_size=34,
+            bold=True,
+            color=(0.7, 0.7, 0.7, 1)
+        )
+        self.add_widget(self.logo)
 
+        self.subtitle = Label(
+            text="REALTIME TRADING SIGNAL",
+            font_size=14,
+            color=(0.5, 0.5, 0.5, 1)
+        )
+        self.add_widget(self.subtitle)
+
+        # ======================
         # CLOCK
+        # ======================
         self.clock = Label(text="", font_size=20)
         self.add_widget(self.clock)
 
+        # ======================
         # MARKET
+        # ======================
         self.market = Label(text="MARKET: -", font_size=18)
         self.add_widget(self.market)
 
-        # SIGNAL STATUS
+        # ======================
+        # SIGNAL
+        # ======================
         self.signal = Label(text="WAITING SIGNAL", font_size=48, bold=True)
         self.add_widget(self.signal)
 
+        # ======================
         # ENTRY
-        self.entry = Label(text="ENTRY: -", font_size=20)
+        # ======================
+        self.entry = Label(text="ENTRY: -", font_size=18)
         self.add_widget(self.entry)
 
+        # ======================
         # STATUS
-        self.status = Label(text="CONNECTING...", font_size=16)
+        # ======================
+        self.status = Label(text="CONNECTING...", font_size=14)
         self.add_widget(self.status)
-
-        # HISTORY SIMPLE
-        self.history = Label(text="HISTORY: -", font_size=14)
-        self.add_widget(self.history)
 
         Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 1)
@@ -57,17 +80,18 @@ class SignalApp(BoxLayout):
 
     # ======================
     def load_signal(self, dt):
-
         try:
-            url = DATA_URL + "?t=" + str(int(time.time()))
-
             headers = {
                 "Cache-Control": "no-cache",
                 "Pragma": "no-cache",
                 "User-Agent": "Mozilla/5.0"
             }
 
-            r = requests.get(url, headers=headers, timeout=8)
+            r = requests.get(DATA_URL, headers=headers, timeout=8)
+
+            print("STATUS:", r.status_code)
+            print("RAW:", r.text)
+
             data = r.json()
 
             signal = data.get("signal", "WAITING")
@@ -76,7 +100,9 @@ class SignalApp(BoxLayout):
 
             self.market.text = f"📊 {market}"
 
-            # +1 menit logic
+            # ======================
+            # ENTRY +1 MIN
+            # ======================
             try:
                 t = datetime.strptime(entry_time, "%H:%M")
                 t = t + timedelta(minutes=1)
@@ -89,38 +115,32 @@ class SignalApp(BoxLayout):
             # ======================
             if signal.upper() == "BUY":
                 Window.clearcolor = (0, 0.5, 0, 1)
-
                 self.signal.text = "🟢 BUY NOW"
                 self.entry.text = f"ENTRY BUY: {final_entry}"
                 self.status.text = "LIVE CONNECTED"
-
-                self.history.text = f"LAST: BUY {final_entry}"
 
             # ======================
             # SELL
             # ======================
             elif signal.upper() == "SELL":
                 Window.clearcolor = (0.6, 0, 0, 1)
-
                 self.signal.text = "🔴 SELL NOW"
                 self.entry.text = f"ENTRY SELL: {final_entry}"
                 self.status.text = "LIVE CONNECTED"
 
-                self.history.text = f"LAST: SELL {final_entry}"
-
+            # ======================
+            # WAITING
+            # ======================
             else:
                 Window.clearcolor = (0.08, 0.08, 0.10, 1)
-
                 self.signal.text = "WAITING SIGNAL"
                 self.entry.text = "-"
                 self.status.text = "NO SIGNAL"
 
         except Exception as e:
-            Window.clearcolor = (0.1, 0.1, 0.12, 1)
-
-            self.signal.text = "OFFLINE"
-            self.status.text = "NO CONNECTION"
             print("ERROR:", e)
+            self.signal.text = "ERROR CONNECT"
+            self.status.text = "OFFLINE"
 
 
 class MainApp(App):
