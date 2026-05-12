@@ -7,7 +7,6 @@ from kivymd.uix.screen import MDScreen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
-from kivymd.uix.scrollview import MDScrollView
 from kivy.clock import Clock
 from kivy.core.window import Window
 
@@ -15,9 +14,6 @@ from kivy.core.window import Window
 DATA_URL = "http://157.10.252.46:5000/signal"
 
 
-# ======================
-# MAIN SCREEN
-# ======================
 class MainScreen(MDScreen):
 
     def __init__(self, **kwargs):
@@ -25,7 +21,7 @@ class MainScreen(MDScreen):
 
         self.history = []
 
-        Window.clearcolor = (0.12, 0.12, 0.14, 1)
+        Window.clearcolor = (0.10, 0.10, 0.12, 1)
 
         root = MDBoxLayout(orientation="vertical", padding=15, spacing=12)
 
@@ -46,10 +42,10 @@ class MainScreen(MDScreen):
         # CLOCK CARD
         # ======================
         self.clock_card = MDCard(
-            radius=20,
-            padding=20,
+            radius=15,
+            padding=15,
             size_hint_y=None,
-            height=100
+            height=80
         )
 
         self.clock = MDLabel(
@@ -62,24 +58,31 @@ class MainScreen(MDScreen):
         root.add_widget(self.clock_card)
 
         # ======================
-        # MARKET
+        # MARKET CARD
         # ======================
+        self.market_card = MDCard(
+            radius=15,
+            padding=15,
+            size_hint_y=None,
+            height=70
+        )
+
         self.market = MDLabel(
             text="MARKET: -",
-            halign="center",
-            size_hint_y=None,
-            height=30
+            halign="center"
         )
-        root.add_widget(self.market)
+
+        self.market_card.add_widget(self.market)
+        root.add_widget(self.market_card)
 
         # ======================
-        # ENTRY CARD (CORE SIGNAL)
+        # ENTRY CARD (BIG CORE)
         # ======================
         self.entry_card = MDCard(
             radius=25,
             padding=25,
             size_hint_y=None,
-            height=180,
+            height=200,
             md_bg_color=(0.2, 0.2, 0.2, 1)
         )
 
@@ -103,26 +106,43 @@ class MainScreen(MDScreen):
         root.add_widget(self.entry_card)
 
         # ======================
-        # HISTORY (SAFE VERSION)
+        # STATUS CARD
         # ======================
-        self.history_box = MDBoxLayout(
-            orientation="vertical",
-            adaptive_height=True,
-            spacing=5
+        self.status_card = MDCard(
+            radius=15,
+            padding=15,
+            size_hint_y=None,
+            height=70
         )
 
-        self.history_scroll = MDScrollView()
-        self.history_scroll.add_widget(self.history_box)
+        self.status = MDLabel(
+            text="STATUS: CONNECTING...",
+            halign="center"
+        )
 
-        root.add_widget(self.history_scroll)
+        self.status_card.add_widget(self.status)
+        root.add_widget(self.status_card)
+
+        # ======================
+        # HISTORY CARD
+        # ======================
+        self.history_card = MDCard(
+            radius=15,
+            padding=15
+        )
+
+        self.history_label = MDLabel(
+            text="HISTORY:\n-",
+            halign="left"
+        )
+
+        self.history_card.add_widget(self.history_label)
+        root.add_widget(self.history_card)
 
         self.add_widget(root)
 
-        # ======================
-        # CLOCK + SIGNAL LOOP
-        # ======================
-        Clock.schedule_interval(self.update_clock, 1.5)
-        Clock.schedule_interval(self.load_signal, 2.5)
+        Clock.schedule_interval(self.update_clock, 1)
+        Clock.schedule_interval(self.load_signal, 2)
 
     # ======================
     # CLOCK
@@ -131,12 +151,12 @@ class MainScreen(MDScreen):
         self.clock.text = datetime.now().strftime("%H:%M:%S")
 
     # ======================
-    # LOAD SIGNAL (SAFE API)
+    # LOAD SIGNAL
     # ======================
     def load_signal(self, dt):
 
         try:
-            r = requests.get(DATA_URL + "?t=" + str(time.time()), timeout=3)
+            r = requests.get(DATA_URL + "?t=" + str(time.time()), timeout=4)
             data = r.json()
 
             signal = data.get("signal", "WAITING")
@@ -150,10 +170,12 @@ class MainScreen(MDScreen):
             # ======================
             if signal.upper() == "BUY":
 
-                self.entry_card.md_bg_color = (0, 0.6, 0.2, 1)
+                self.entry_card.md_bg_color = (0, 0.7, 0.2, 1)
 
                 self.entry_label.text = "🟢 ENTRY BUY"
                 self.entry_time.text = f"DI JAM {entry_time}"
+
+                self.status.text = "ACTIVE BUY SIGNAL"
 
                 self.history.insert(0, f"BUY - {entry_time}")
 
@@ -162,10 +184,12 @@ class MainScreen(MDScreen):
             # ======================
             elif signal.upper() == "SELL":
 
-                self.entry_card.md_bg_color = (0.6, 0, 0, 1)
+                self.entry_card.md_bg_color = (0.7, 0, 0, 1)
 
                 self.entry_label.text = "🔴 ENTRY SELL"
                 self.entry_time.text = f"DI JAM {entry_time}"
+
+                self.status.text = "ACTIVE SELL SIGNAL"
 
                 self.history.insert(0, f"SELL - {entry_time}")
 
@@ -180,29 +204,18 @@ class MainScreen(MDScreen):
 
                 self.entry_time.text = "-"
 
-            # ======================
-            # UPDATE HISTORY UI SAFE
-            # ======================
-            self.history_box.clear_widgets()
+                self.status.text = "NO SIGNAL"
 
-            for h in self.history[:10]:
-                self.history_box.add_widget(
-                    MDLabel(
-                        text="• " + h,
-                        size_hint_y=None,
-                        height=25
-                    )
-                )
+            # ======================
+            # UPDATE HISTORY
+            # ======================
+            self.history_label.text = "HISTORY:\n" + "\n".join(self.history[:8])
 
         except Exception as e:
-            print("ERROR API:", e)
-            self.entry_label.text = "OFFLINE"
-            self.entry_card.md_bg_color = (0.1, 0.1, 0.1, 1)
+            print("ERROR:", e)
+            self.status.text = "OFFLINE / NO CONNECTION"
 
 
-# ======================
-# APP
-# ======================
 class AISignalApp(MDApp):
 
     def build(self):
