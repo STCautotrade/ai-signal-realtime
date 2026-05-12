@@ -40,14 +40,16 @@ jobs:
       # =========================
       # 🔥 INSTALL ANDROID SDK (FIX UTAMA)
       # =========================
-      - name: Install Android SDK
+      - name: Install Android SDK (FIXED)
         run: |
+          mkdir -p $HOME/android-sdk
+          cd $HOME/android-sdk
 
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip commandlinetools-linux-*.zip
 
-          mkdir -p cmdline-tools/latest
-          mv cmdline-tools/* cmdline-tools/latest/
+          mkdir -p cmdline-tools
+          mv cmdline-tools cmdline-tools/latest
 
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
