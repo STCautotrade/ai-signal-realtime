@@ -16,28 +16,18 @@ DATA_URL = "http://157.10.252.46:5000/signal"
 
 
 # ======================
-# RGB ANIMATION COLORS
+# MAIN SCREEN
 # ======================
-RGB_COLORS = [
-    (0, 0.8, 0.2, 1),
-    (0.2, 0.6, 1, 1),
-    (1, 0.2, 0.2, 1),
-    (1, 1, 0.2, 1)
-]
-
-
 class MainScreen(MDScreen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.history = []
-        self.rgb_index = 0
-        self.page = "HOME"
 
         Window.clearcolor = (0.12, 0.12, 0.14, 1)
 
-        root = MDBoxLayout(orientation="vertical", padding=15, spacing=10)
+        root = MDBoxLayout(orientation="vertical", padding=15, spacing=12)
 
         # ======================
         # TITLE
@@ -46,14 +36,21 @@ class MainScreen(MDScreen):
             text="🚀 AI SIGNAL PRO",
             halign="center",
             font_style="H4",
-            bold=True
+            bold=True,
+            size_hint_y=None,
+            height=40
         )
         root.add_widget(self.title)
 
         # ======================
         # CLOCK CARD
         # ======================
-        self.clock_card = MDCard(radius=20, padding=20, size_hint_y=None, height=90)
+        self.clock_card = MDCard(
+            radius=20,
+            padding=20,
+            size_hint_y=None,
+            height=100
+        )
 
         self.clock = MDLabel(
             text="00:00:00",
@@ -67,17 +64,23 @@ class MainScreen(MDScreen):
         # ======================
         # MARKET
         # ======================
-        self.market = MDLabel(text="MARKET: -", halign="center")
+        self.market = MDLabel(
+            text="MARKET: -",
+            halign="center",
+            size_hint_y=None,
+            height=30
+        )
         root.add_widget(self.market)
 
         # ======================
-        # ENTRY CARD (CORE PRO PANEL)
+        # ENTRY CARD (CORE SIGNAL)
         # ======================
         self.entry_card = MDCard(
             radius=25,
             padding=25,
             size_hint_y=None,
-            height=180
+            height=180,
+            md_bg_color=(0.2, 0.2, 0.2, 1)
         )
 
         self.entry_label = MDLabel(
@@ -100,35 +103,26 @@ class MainScreen(MDScreen):
         root.add_widget(self.entry_card)
 
         # ======================
-        # HISTORY SCROLL
+        # HISTORY (SAFE VERSION)
         # ======================
-        self.history_label = MDLabel(
-            text="HISTORY:\n-",
-            halign="left",
-            size_hint_y=None
+        self.history_box = MDBoxLayout(
+            orientation="vertical",
+            adaptive_height=True,
+            spacing=5
         )
 
-        scroll = MDScrollView()
-        scroll.add_widget(self.history_label)
+        self.history_scroll = MDScrollView()
+        self.history_scroll.add_widget(self.history_box)
 
-        root.add_widget(scroll)
-
-        # ======================
-        # NAVIGATION
-        # ======================
-        nav = MDBoxLayout(size_hint_y=None, height=60, spacing=10)
-
-        nav.add_widget(MDLabel(text="HOME", halign="center"))
-        nav.add_widget(MDLabel(text="HISTORY", halign="center"))
-        nav.add_widget(MDLabel(text="PROFILE", halign="center"))
-
-        root.add_widget(nav)
+        root.add_widget(self.history_scroll)
 
         self.add_widget(root)
 
-        Clock.schedule_interval(self.update_clock, 1)
-        Clock.schedule_interval(self.load_signal, 1)
-        Clock.schedule_interval(self.rgb_animation, 0.2)
+        # ======================
+        # CLOCK + SIGNAL LOOP
+        # ======================
+        Clock.schedule_interval(self.update_clock, 1.5)
+        Clock.schedule_interval(self.load_signal, 2.5)
 
     # ======================
     # CLOCK
@@ -137,70 +131,78 @@ class MainScreen(MDScreen):
         self.clock.text = datetime.now().strftime("%H:%M:%S")
 
     # ======================
-    # RGB BORDER EFFECT
-    # ======================
-    def rgb_animation(self, dt):
-        color = RGB_COLORS[self.rgb_index]
-        self.entry_card.md_bg_color = color
-        self.rgb_index = (self.rgb_index + 1) % len(RGB_COLORS)
-
-    # ======================
-    # LOAD SIGNAL
+    # LOAD SIGNAL (SAFE API)
     # ======================
     def load_signal(self, dt):
 
         try:
-            r = requests.get(DATA_URL + "?t=" + str(time.time()), timeout=5)
+            r = requests.get(DATA_URL + "?t=" + str(time.time()), timeout=3)
             data = r.json()
 
             signal = data.get("signal", "WAITING")
             market = data.get("market", "-")
             entry_time = data.get("entry_time", "-")
 
-            self.market.text = f"MARKET: {market}"
+            self.market.text = f"📊 MARKET: {market}"
 
             # ======================
             # BUY
             # ======================
             if signal.upper() == "BUY":
 
+                self.entry_card.md_bg_color = (0, 0.6, 0.2, 1)
+
                 self.entry_label.text = "🟢 ENTRY BUY"
                 self.entry_time.text = f"DI JAM {entry_time}"
 
                 self.history.insert(0, f"BUY - {entry_time}")
-
-                self.entry_card.md_bg_color = (0, 0.6, 0.2, 1)
 
             # ======================
             # SELL
             # ======================
             elif signal.upper() == "SELL":
 
+                self.entry_card.md_bg_color = (0.6, 0, 0, 1)
+
                 self.entry_label.text = "🔴 ENTRY SELL"
                 self.entry_time.text = f"DI JAM {entry_time}"
 
                 self.history.insert(0, f"SELL - {entry_time}")
-
-                self.entry_card.md_bg_color = (0.6, 0, 0, 1)
 
             # ======================
             # WAIT
             # ======================
             else:
 
+                self.entry_card.md_bg_color = (0.2, 0.2, 0.2, 1)
+
                 self.entry_label.text = "MENUNGGU SIGNAL ....."
+
                 self.entry_time.text = "-"
 
             # ======================
-            # UPDATE HISTORY
+            # UPDATE HISTORY UI SAFE
             # ======================
-            self.history_label.text = "HISTORY:\n" + "\n".join(self.history[:10])
+            self.history_box.clear_widgets()
+
+            for h in self.history[:10]:
+                self.history_box.add_widget(
+                    MDLabel(
+                        text="• " + h,
+                        size_hint_y=None,
+                        height=25
+                    )
+                )
 
         except Exception as e:
-            print("ERROR:", e)
+            print("ERROR API:", e)
             self.entry_label.text = "OFFLINE"
+            self.entry_card.md_bg_color = (0.1, 0.1, 0.1, 1)
 
 
+# ======================
+# APP
+# ======================
 class AISignalApp(MDApp):
 
     def build(self):
