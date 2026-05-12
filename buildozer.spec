@@ -1,46 +1,56 @@
 [app]
 
 title = AI SIGNAL REALTIME
+
 package.name = aisignal
 package.domain = org.stcautotrade
 
 source.dir = .
-source.include_exts = py,json,kv,png,jpg
+source.include_exts = py,json,png,jpg,kv
 
-# MAIN APP
+# MAIN FILE
 entrypoint = main.py
 
-version = 1.0
+version = 1.0.0
 
 # ======================
-# PYTHON REQUIREMENTS
+# REQUIREMENTS
 # ======================
-requirements = python3,kivy,requests
+requirements = python3,kivy,requests,urllib3,certifi
 
 # ======================
-# UI SETTINGS
+# APP SETTINGS
 # ======================
 orientation = portrait
 fullscreen = 0
 
 # ======================
-# ANDROID SETTINGS
+# ANDROID SETTINGS (FIXED)
 # ======================
-android.permissions = INTERNET,ACCESS_NETWORK_STATE
 
-android.arch = arm64-v8a
+android.permissions = INTERNET
 
 android.api = 33
 android.minapi = 21
-android.ndk = 23b
 
-android.accept_sdk_license = True
+# FIX NDK ERROR (WAJIB)
+android.ndk = 27b
+
+# FIX ARCH WARNING (WAJIB BARU)
+android.archs = arm64-v8a
 
 # ======================
-# PERFORMANCE / STABILITY
+# BUILD PERFORMANCE
 # ======================
+
+android.allow_backup = True
+android.logcat_filters = *:S python:D
+
+# ======================
+# BUILD OPTIONS
+# ======================
+
+[buildozer]
+
 log_level = 2
 warn_on_root = 0
-
-# optional (lebih stabil di build server)
-android.allow_backup = False
