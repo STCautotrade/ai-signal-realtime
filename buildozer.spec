@@ -1,19 +1,18 @@
 [app]
 
 title = AI SIGNAL REALTIME
-
 package.name = aisignal
 package.domain = org.stcautotrade
 
 source.dir = .
 source.include_exts = py,json,kv,png,jpg
 
-# main file (ini lebih benar daripada source.main)
-entrypoint = main.py
+# MAIN FILE
+source.main = main.py
 
 version = 1.0
 
-requirements = python3,kivy,requests
+requirements = python3,kivy,requests,urllib3,certifi
 
 orientation = portrait
 fullscreen = 0
@@ -21,6 +20,8 @@ fullscreen = 0
 # ======================
 # ANDROID SETTINGS
 # ======================
+
+android.permissions = INTERNET
 
 android.arch = arm64-v8a
 
