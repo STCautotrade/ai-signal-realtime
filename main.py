@@ -9,14 +9,11 @@ from kivy.core.window import Window
 from kivy.graphics import Color, RoundedRectangle
 from datetime import datetime
 
-# ======================
-# VPS API
-# ======================
 DATA_URL = "http://157.10.252.46:5000/signal"
 
 
 # ======================
-# CARD COMPONENT
+# CARD TEMPLATE
 # ======================
 class Card(BoxLayout):
     def __init__(self, **kwargs):
@@ -24,10 +21,16 @@ class Card(BoxLayout):
         self.size_hint_y = None
 
         with self.canvas.before:
-            Color(0.12, 0.12, 0.18, 1)
+            Color(0.15, 0.15, 0.18, 1)
             self.bg = RoundedRectangle(radius=[18])
 
         self.bind(pos=self.update_bg, size=self.update_bg)
+
+    def set_color(self, r, g, b, a=1):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(r, g, b, a)
+            self.bg = RoundedRectangle(radius=[18])
 
     def update_bg(self, *args):
         self.bg.pos = self.pos
@@ -35,121 +38,71 @@ class Card(BoxLayout):
 
 
 # ======================
-# MAIN UI
+# MAIN APP
 # ======================
 class SignalUI(BoxLayout):
 
     def __init__(self, **kwargs):
-        super().__init__(orientation='vertical', padding=10, spacing=8, **kwargs)
+        super().__init__(orientation='vertical', padding=10, spacing=10, **kwargs)
 
-        Window.clearcolor = (0.05, 0.05, 0.08, 1)
+        # 🔥 FIX: BACKGROUND SELALU ABU-ABU
+        Window.clearcolor = (0.12, 0.12, 0.14, 1)
 
         self.page = "HOME"
-        self.history_list = []
 
         # ======================
         # TITLE
         # ======================
         self.title = Label(
             text="🚀 AI SIGNAL PRO",
-            font_size=44,
+            font_size=38,
             bold=True,
             size_hint_y=None,
-            height=60,
-            color=(0.2, 0.8, 1, 1)
+            height=55,
+            color=(0.3, 0.8, 1, 1)
         )
         self.add_widget(self.title)
-
-        # ======================
-        # ANIMATED BANNER
-        # ======================
-        self.banner_texts = [
-            "⚡ REALTIME TRADING SYSTEM ⚡",
-            "📡 CONNECTED TO VPS ENGINE",
-            "🔥 AI ANALYSIS ACTIVE MODE"
-        ]
-        self.banner_index = 0
-
-        self.banner = Label(
-            text=self.banner_texts[0],
-            font_size=16,
-            size_hint_y=None,
-            height=25,
-            color=(0.7, 0.7, 1, 1)
-        )
-        self.add_widget(self.banner)
-
-        Clock.schedule_interval(self.animate_banner, 2)
 
         # ======================
         # CLOCK CARD
         # ======================
         self.clock_card = Card()
-        self.clock_card.height = 90
+        self.clock_card.height = 80
 
-        self.clock = Label(
-            text="00:00:00",
-            font_size=48,
-            bold=True,
-            color=(0, 1, 0.6, 1)
-        )
+        self.clock = Label(text="00:00:00", font_size=40, bold=True, color=(0, 1, 0.6, 1))
         self.clock_card.add_widget(self.clock)
         self.add_widget(self.clock_card)
 
         # ======================
         # MARKET
         # ======================
-        self.market = Label(
-            text="📊 MARKET: -",
-            font_size=18,
-            size_hint_y=None,
-            height=30
-        )
+        self.market = Label(text="📊 MARKET: -", font_size=16, size_hint_y=None, height=30)
         self.add_widget(self.market)
 
         # ======================
-        # SIGNAL STATE
+        # SIGNAL
         # ======================
-        self.signal = Label(
-            text="MENUNGGU SIGNAL .....",
-            font_size=40,
-            bold=True,
-            size_hint_y=None,
-            height=100
-        )
+        self.signal = Label(text="MENUNGGU SIGNAL .....", font_size=35, bold=True, size_hint_y=None, height=90)
         self.add_widget(self.signal)
 
         # ======================
-        # ENTRY
+        # ENTRY CARD (🔥 INI YANG DIWARNAI)
         # ======================
-        self.entry = Label(
-            text="-",
-            font_size=22,
-            size_hint_y=None,
-            height=40
-        )
-        self.add_widget(self.entry)
+        self.entry_card = Card()
+        self.entry_card.height = 90
+
+        self.entry = Label(text="-", font_size=24, bold=True)
+        self.entry_card.add_widget(self.entry)
+        self.add_widget(self.entry_card)
 
         # ======================
-        # CONTENT AREA (DYNAMIC PAGE)
+        # HISTORY
         # ======================
-        self.content = Label(
-            text="SYSTEM READY",
-            font_size=14
-        )
-        self.add_widget(self.content)
+        self.history = Label(text="HISTORY:\n-", font_size=14)
+        self.add_widget(self.history)
 
         # ======================
-        # HISTORY BOX
-        # ======================
-        self.history_box = Label(
-            text="HISTORY:\n-",
-            font_size=14
-        )
-        self.add_widget(self.history_box)
-
-        # ======================
-        # NAV BUTTONS (REAL CLICK)
+        # NAV
         # ======================
         nav = BoxLayout(size_hint_y=None, height=45, spacing=5)
 
@@ -167,18 +120,10 @@ class SignalUI(BoxLayout):
 
         self.add_widget(nav)
 
-        # ======================
-        # CLOCK + SIGNAL LOOP
-        # ======================
+        self.history_list = []
+
         Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 1)
-
-    # ======================
-    # BANNER ANIMATION
-    # ======================
-    def animate_banner(self, dt):
-        self.banner_index = (self.banner_index + 1) % len(self.banner_texts)
-        self.banner.text = self.banner_texts[self.banner_index]
 
     # ======================
     # CLOCK
@@ -187,7 +132,7 @@ class SignalUI(BoxLayout):
         self.clock.text = datetime.now().strftime("%H:%M:%S")
 
     # ======================
-    # CHANGE PAGE
+    # PAGE (optional)
     # ======================
     def set_page(self, page):
         self.page = page
@@ -208,84 +153,54 @@ class SignalUI(BoxLayout):
             self.market.text = f"📊 MARKET: {market}"
 
             # ======================
-            # HOME PAGE
+            # BUY
             # ======================
-            if self.page == "HOME":
+            if signal.upper() == "BUY":
 
-                if signal.upper() == "BUY":
+                self.signal.text = "ENTRY BUY"
+                self.signal.color = (0, 1, 0.5, 1)
 
-                    Window.clearcolor = (0.0, 0.4, 0.0, 1)
+                self.entry.text = f"BUY @ {entry_time}"
 
-                    self.signal.text = "ENTRY BUY"
-                    self.signal.color = (0, 1, 0.5, 1)
+                # 🔥 ENTRY CARD HIJAU
+                self.entry_card.set_color(0.0, 0.6, 0.2, 1)
 
-                    self.entry.text = f"ENTRY BUY JAM {entry_time}"
-
-                    self.history_list.insert(0, f"BUY - {entry_time}")
-
-                elif signal.upper() == "SELL":
-
-                    Window.clearcolor = (0.5, 0.0, 0.0, 1)
-
-                    self.signal.text = "ENTRY SELL"
-                    self.signal.color = (1, 0.2, 0.2, 1)
-
-                    self.entry.text = f"ENTRY SELL JAM {entry_time}"
-
-                    self.history_list.insert(0, f"SELL - {entry_time}")
-
-                else:
-
-                    Window.clearcolor = (0.05, 0.05, 0.08, 1)
-
-                    self.signal.text = "MENUNGGU SIGNAL ....."
-                    self.signal.color = (1, 1, 1, 1)
-
-                    self.entry.text = "-"
-
-                # update history preview
-                self.history_box.text = "HISTORY:\n" + "\n".join(self.history_list[:5])
+                self.history_list.insert(0, f"BUY - {entry_time}")
 
             # ======================
-            # HISTORY PAGE
+            # SELL
             # ======================
-            elif self.page == "HISTORY":
+            elif signal.upper() == "SELL":
 
-                Window.clearcolor = (0.07, 0.07, 0.10, 1)
+                self.signal.text = "ENTRY SELL"
+                self.signal.color = (1, 0.2, 0.2, 1)
 
-                self.signal.text = "HISTORY MODE"
+                self.entry.text = f"SELL @ {entry_time}"
+
+                # 🔥 ENTRY CARD MERAH
+                self.entry_card.set_color(0.6, 0.0, 0.0, 1)
+
+                self.history_list.insert(0, f"SELL - {entry_time}")
+
+            # ======================
+            # WAIT
+            # ======================
+            else:
+
+                self.signal.text = "MENUNGGU SIGNAL ....."
+
                 self.entry.text = "-"
 
-                self.content.text = "FULL HISTORY SIGNAL"
+                # 🔥 ENTRY CARD NETRAL
+                self.entry_card.set_color(0.15, 0.15, 0.18, 1)
 
-                self.history_box.text = "ALL HISTORY:\n" + "\n".join(self.history_list)
-
-            # ======================
-            # PROFILE PAGE
-            # ======================
-            elif self.page == "PROFILE":
-
-                Window.clearcolor = (0.08, 0.08, 0.12, 1)
-
-                self.signal.text = "PROFILE"
-                self.entry.text = "-"
-
-                self.content.text = (
-                    "AI SIGNAL PRO\n"
-                    "VPS CONNECTED\n"
-                    "REALTIME SYSTEM ACTIVE"
-                )
-
-                self.history_box.text = ""
+            self.history.text = "HISTORY:\n" + "\n".join(self.history_list[:6])
 
         except Exception as e:
             print("ERROR:", e)
             self.signal.text = "OFFLINE"
 
 
-# ======================
-# APP RUN
-# ======================
 class MainApp(App):
 
     def build(self):
