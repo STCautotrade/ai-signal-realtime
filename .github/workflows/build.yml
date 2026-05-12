@@ -24,14 +24,13 @@ jobs:
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: "17"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install cython==0.29.33
-          pip install buildozer
+          pip install cython==0.29.33 buildozer
 
       - name: Install system packages
         run: |
@@ -45,9 +44,16 @@ jobs:
           git wget curl \
           build-essential ccache
 
-      - name: Accept Android licenses
+      # =========================
+      # 🔥 FIX ANDROID SDK (PENTING)
+      # =========================
+      - name: Setup Android SDK components
         run: |
-          yes | sdkmanager --licenses || true
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-33"
+          sdkmanager "build-tools;33.0.2"
+          sdkmanager "ndk;27.3.13750724"
 
       - name: Clean Buildozer cache
         run: |
@@ -62,5 +68,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: APK
-          path: |
-            bin/*.apk
+          path: bin/*.apk
