@@ -8,7 +8,7 @@ package.domain = org.stcautotrade
 source.dir = .
 source.include_exts = py,json,png,jpg,kv
 
-# MAIN FILE
+# MAIN FILE (INI YANG BENAR UNTUK BUILD)
 entrypoint = main.py
 
 version = 1.0.0
@@ -25,7 +25,7 @@ orientation = portrait
 fullscreen = 0
 
 # ======================
-# ANDROID SETTINGS (FIXED)
+# ANDROID SETTINGS (FINAL STABLE FIX)
 # ======================
 
 android.permissions = INTERNET
@@ -33,23 +33,24 @@ android.permissions = INTERNET
 android.api = 33
 android.minapi = 21
 
-# FIX NDK ERROR (WAJIB)
-android.ndk = 27b
+# 🔥 LOCK VERSION (BIAR TIDAK AMBIL 37 LAGI)
+android.sdk = 33
+android.build_tools = 33.0.2
+android.ndk = 25b
 
-# FIX ARCH WARNING (WAJIB BARU)
+# ARCH STABLE (64-bit Android)
 android.archs = arm64-v8a
 
-# ======================
-# BUILD PERFORMANCE
-# ======================
+# FIX LICENSE ERROR
+android.accept_sdk_license = True
 
+# OPTIONAL STABILITY SETTINGS
 android.allow_backup = True
 android.logcat_filters = *:S python:D
 
 # ======================
 # BUILD OPTIONS
 # ======================
-
 [buildozer]
 
 log_level = 2
