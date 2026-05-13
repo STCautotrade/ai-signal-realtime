@@ -91,7 +91,7 @@ class Dashboard(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
-        # ================= LOGO FIX =================
+        # ================= LOGO (PAKAI PNG KAMU) =================
         logo_box = BoxLayout(
             size_hint_y=None,
             height=dp(110),
@@ -99,7 +99,7 @@ class Dashboard(BoxLayout):
         )
 
         self.logo = Image(
-            source=os.path.join(BASE_DIR, "logo.jpg"),  # 🔥 FIX GITHUB SAFE
+            source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
             allow_stretch=True,
             keep_ratio=True
         )
@@ -258,7 +258,7 @@ class Dashboard(BoxLayout):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
 
-                # HISTORY TRANSPARAN
+                # TRANSPARAN HISTORY (TIDAK IKUT WARNA SIGNAL UTAMA)
                 if h["type"] == "BUY":
                     self.rows[i].set_bg((0, 1, 0.4, 0.15))
                 else:
