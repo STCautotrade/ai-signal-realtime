@@ -25,56 +25,35 @@ Window.clearcolor = (0.05, 0.05, 0.07, 1)
 # =========================
 class Card(BoxLayout):
 
-    def __init__(
-        self,
-        bg=(0.15, 0.15, 0.18, 1),
-        border=(0.25, 0.25, 0.3, 1),
-        radius=18,
-        **kwargs
-    ):
-
+    def __init__(self, bg=(0.15, 0.15, 0.18, 1), border=(0.25, 0.25, 0.3, 1), radius=18, **kwargs):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
         self.padding = 15
         self.spacing = 10
+
+        # ✅ FIX RESPONSIVE HEIGHT (PENTING)
         self.size_hint_y = None
 
         with self.canvas.before:
-
             self.bg_color = Color(*bg)
-
-            self.rect = RoundedRectangle(
-                radius=[radius]
-            )
+            self.rect = RoundedRectangle(radius=[radius])
 
         with self.canvas.after:
-
             self.line_color = Color(*border)
+            self.line = Line(rounded_rectangle=(0, 0, 0, 0, radius), width=1.5)
 
-            self.line = Line(
-                rounded_rectangle=(0, 0, 0, 0, radius),
-                width=1.5
-            )
-
-        self.bind(pos=self.update_canvas)
-        self.bind(size=self.update_canvas)
+        self.bind(pos=self.update_canvas, size=self.update_canvas)
 
     def update_canvas(self, *args):
-
         self.rect.pos = self.pos
         self.rect.size = self.size
 
         self.line.rounded_rectangle = (
-            self.x,
-            self.y,
-            self.width,
-            self.height,
-            18
+            self.x, self.y, self.width, self.height, 18
         )
 
     def set_bg(self, color):
-
         self.bg_color.rgba = color
 
 
@@ -89,31 +68,20 @@ class HistoryRow(Card):
 
         if color_type == "buy":
             bg = (0.0, 0.55, 0.2, 1)
-
         elif color_type == "sell":
             bg = (0.65, 0.0, 0.0, 1)
 
-        super().__init__(
-            bg=bg,
-            border=(0.3, 0.3, 0.35, 1),
-            height=45,
-            padding=10,
-            **kwargs
-        )
+        super().__init__(bg=bg, border=(0.3, 0.3, 0.35, 1), height=50, **kwargs)
 
         self.label = Label(
             text=text,
-            font_size=15,
-            bold=True,
+            font_size=14,
             color=(1, 1, 1, 1),
             halign="left",
             valign="middle"
         )
 
-        self.label.bind(
-            size=self.label.setter("text_size")
-        )
-
+        self.label.bind(size=self.label.setter("text_size"))
         self.add_widget(self.label)
 
 
@@ -123,37 +91,24 @@ class HistoryRow(Card):
 class Content(BoxLayout):
 
     def __init__(self, **kwargs):
-
         super().__init__(
             orientation="vertical",
-            spacing=12,
-            padding=10,
-            size_hint_y=None,
-            **kwargs
+            spacing=8,
+            padding=8
         )
 
-        self.bind(
-            minimum_height=self.setter("height")
-        )
+        # ✅ FULL HEIGHT CONTROL (PENTING)
+        self.size_hint_y = 1
 
         self.history_data = []
 
         # =========================
-        # TOP BAR
+        # TOP BAR (FIX HEIGHT)
         # =========================
-        self.topbar = Card(
-            bg=(0.08, 0.12, 0.18, 1),
-            border=(0.1, 0.5, 1, 1),
-            height=90
-        )
+        self.topbar = Card(bg=(0.08, 0.12, 0.18, 1), border=(0.1, 0.5, 1, 1), height=80)
+        self.topbar.size_hint_y = None
 
-        self.title = Label(
-            text="AI SIGNAL PRO",
-            font_size=38,
-            bold=True,
-            color=(0.1, 0.7, 1, 1)
-        )
-
+        self.title = Label(text="AI SIGNAL PRO", font_size=30, bold=True, color=(0.1, 0.7, 1, 1))
         self.topbar.add_widget(self.title)
 
         self.add_widget(self.topbar)
@@ -161,451 +116,138 @@ class Content(BoxLayout):
         # =========================
         # MARKET + CLOCK
         # =========================
-        row = BoxLayout(
-            orientation="horizontal",
-            spacing=10,
-            size_hint_y=None,
-            height=80
-        )
+        row = BoxLayout(orientation="horizontal", size_hint_y=None, height=70, spacing=8)
 
-        # MARKET CARD
-        self.market_card = Card(
-            bg=(0.05, 0.12, 0.10, 1),
-            border=(0.0, 1, 0.6, 1),
-            height=80
-        )
+        self.market_card = Card(bg=(0.05, 0.12, 0.10, 1), border=(0.0, 1, 0.6, 1), height=70)
+        self.market_label = Label(text="MARKET : CRYPTO IDX", font_size=16, color=(0.1, 1, 0.7, 1))
+        self.market_card.add_widget(self.market_label)
 
-        self.market_label = Label(
-            text="MARKET : CRYPTO IDX",
-            font_size=20,
-            bold=True,
-            color=(0.1, 1, 0.7, 1)
-        )
-
-        self.market_card.add_widget(
-            self.market_label
-        )
-
-        # CLOCK CARD
-        self.clock_card = Card(
-            bg=(0.05, 0.10, 0.15, 1),
-            border=(0.1, 0.7, 1, 1),
-            height=80
-        )
-
-        self.clock_label = Label(
-            text="00:00:00 WIB",
-            font_size=24,
-            bold=True,
-            color=(0, 1, 0.6, 1)
-        )
-
-        self.clock_card.add_widget(
-            self.clock_label
-        )
+        self.clock_card = Card(bg=(0.05, 0.10, 0.15, 1), border=(0.1, 0.7, 1, 1), height=70)
+        self.clock_label = Label(text="00:00:00", font_size=18, color=(0, 1, 0.6, 1))
+        self.clock_card.add_widget(self.clock_label)
 
         row.add_widget(self.market_card)
         row.add_widget(self.clock_card)
-
         self.add_widget(row)
 
         # =========================
-        # BIG SIGNAL CARD
+        # SIGNAL CARD (BESAR)
         # =========================
-        self.signal_card = Card(
-            bg=(0.2, 0.2, 0.2, 1),
-            border=(0.4, 0.4, 0.4, 1),
-            height=240
-        )
+        self.signal_card = Card(bg=(0.2, 0.2, 0.2, 1), border=(0.4, 0.4, 0.4, 1), height=180)
 
-        self.signal_label = Label(
-            text="SEDANG KONFIGURASI",
-            font_size=42,
-            bold=True,
-            color=(1, 1, 1, 1)
-        )
+        self.signal_label = Label(text="LOADING", font_size=32, bold=True)
+        self.signal_info = Label(text="WAIT SIGNAL", font_size=16)
 
-        self.signal_info = Label(
-            text="MENUNGGU SIGNAL",
-            font_size=18,
-            color=(1, 1, 1, 1)
-        )
-
-        self.signal_card.add_widget(
-            self.signal_label
-        )
-
-        self.signal_card.add_widget(
-            self.signal_info
-        )
+        self.signal_card.add_widget(self.signal_label)
+        self.signal_card.add_widget(self.signal_info)
 
         self.add_widget(self.signal_card)
 
         # =========================
-        # ENTRY CARD
+        # ENTRY
         # =========================
-        self.entry_card = Card(
-            bg=(0.12, 0.12, 0.15, 1),
-            border=(0.2, 0.6, 1, 1),
-            height=90
-        )
+        self.entry_card = Card(bg=(0.12, 0.12, 0.15, 1), border=(0.2, 0.6, 1, 1), height=70)
 
-        self.entry_label = Label(
-            text="ENTRY : -",
-            font_size=24,
-            bold=True,
-            color=(1, 1, 1, 1)
-        )
-
-        self.entry_card.add_widget(
-            self.entry_label
-        )
+        self.entry_label = Label(text="ENTRY : -", font_size=18)
+        self.entry_card.add_widget(self.entry_label)
 
         self.add_widget(self.entry_card)
-
-        # =========================
-        # SYSTEM ACTIVE CARD
-        # =========================
-        self.system_card = Card(
-            bg=(0.08, 0.10, 0.13, 1),
-            border=(0.1, 0.6, 1, 1),
-            height=70
-        )
-
-        self.system_label = Label(
-            text="SYSTEM ACTIVE",
-            font_size=20,
-            bold=True,
-            color=(0.1, 0.8, 1, 1)
-        )
-
-        self.system_card.add_widget(
-            self.system_label
-        )
-
-        self.add_widget(self.system_card)
 
         # =========================
         # HISTORY TITLE
         # =========================
         self.history_title = Label(
-            text="HISTORY SIGNAL",
-            font_size=22,
-            bold=True,
-            color=(1, 1, 1, 1),
+            text="HISTORY",
             size_hint_y=None,
-            height=40
+            height=35,
+            font_size=18
         )
 
         self.add_widget(self.history_title)
 
         # =========================
-        # HISTORY ROWS
+        # HISTORY LIST (FILL SPACE)
         # =========================
+        self.history_box = BoxLayout(orientation="vertical", size_hint_y=None)
+        self.history_box.bind(minimum_height=self.history_box.setter("height"))
+
+        scroll = ScrollView()
+        scroll.add_widget(self.history_box)
+
+        # ✅ INI YANG BIKIN FULL LAYAR AMAN
+        self.add_widget(scroll)
+
         self.history_rows = []
 
         for i in range(10):
-
-            row = HistoryRow(
-                text="-",
-                color_type="empty"
-            )
-
+            row = HistoryRow()
             self.history_rows.append(row)
-
-            self.add_widget(row)
+            self.history_box.add_widget(row)
 
         # =========================
         # LOOP
         # =========================
-        Clock.schedule_interval(
-            self.update_clock,
-            1
-        )
-
-        Clock.schedule_interval(
-            self.load_signal,
-            2
-        )
+        Clock.schedule_interval(self.update_clock, 1)
+        Clock.schedule_interval(self.load_signal, 2)
 
     # =========================
     # CLOCK
     # =========================
     def update_clock(self, dt):
-
-        now = datetime.now()
-
-        self.clock_label.text = now.strftime(
-            "%H:%M:%S WIB"
-        )
+        self.clock_label.text = datetime.now().strftime("%H:%M:%S")
 
     # =========================
-    # SIGNAL EXPIRED CHECK
-    # =========================
-    def check_expired(self, entry_time):
-
-        try:
-
-            now = datetime.now().strftime("%H:%M")
-
-            current = datetime.strptime(
-                now,
-                "%H:%M"
-            )
-
-            signal_time = datetime.strptime(
-                entry_time,
-                "%H:%M"
-            )
-
-            return current > signal_time
-
-        except:
-
-            return False
-
-    # =========================
-    # LOAD SIGNAL
+    # SIGNAL
     # =========================
     def load_signal(self, dt):
 
         try:
-
-            r = requests.get(
-                DATA_URL + "?t=" + str(time.time()),
-                timeout=5
-            )
-
+            r = requests.get(DATA_URL + "?t=" + str(time.time()), timeout=5)
             data = r.json()
 
-            signal = data.get(
-                "signal",
-                "WAITING"
-            )
+            signal = data.get("signal", "WAITING")
+            market = data.get("market", "CRYPTO IDX")
+            entry_time = data.get("entry_time", "-")
 
-            market = data.get(
-                "market",
-                "CRYPTO IDX"
-            )
+            self.market_label.text = f"MARKET : {market}"
 
-            entry_time = data.get(
-                "entry_time",
-                "-"
-            )
-
-            self.market_label.text = (
-                f"MARKET : {market}"
-            )
-
-            expired = self.check_expired(
-                entry_time
-            )
-
-            # =========================
-            # BUY
-            # =========================
             if signal.upper() == "BUY":
+                self.signal_card.set_bg((0.0, 0.75, 0.2, 1))
+                self.signal_label.text = "BUY NOW"
 
-                self.signal_card.set_bg(
-                    (0.0, 0.75, 0.2, 1)
-                )
-
-                self.signal_label.text = (
-                    "BUY NOW"
-                )
-
-                self.signal_info.text = (
-                    "AI SIGNAL ACTIVE"
-                )
-
-                if expired:
-
-                    self.entry_label.text = (
-                        "ENTRY CLOSED\nWAIT NEXT SIGNAL"
-                    )
-
-                else:
-
-                    self.entry_label.text = (
-                        f"ENTRY BUY DI JAM {entry_time}"
-                    )
-
-                new_data = (
-                    f"{market} | {entry_time} | BUY"
-                )
-
-                if len(self.history_data) == 0 or \
-                   self.history_data[0]["text"] != new_data:
-
-                    self.history_data.insert(
-                        0,
-                        {
-                            "text": new_data,
-                            "type": "buy"
-                        }
-                    )
-
-            # =========================
-            # SELL
-            # =========================
             elif signal.upper() == "SELL":
+                self.signal_card.set_bg((0.75, 0.0, 0.0, 1))
+                self.signal_label.text = "SELL NOW"
 
-                self.signal_card.set_bg(
-                    (0.75, 0.0, 0.0, 1)
-                )
-
-                self.signal_label.text = (
-                    "SELL NOW"
-                )
-
-                self.signal_info.text = (
-                    "AI SIGNAL ACTIVE"
-                )
-
-                if expired:
-
-                    self.entry_label.text = (
-                        "ENTRY CLOSED\nWAIT NEXT SIGNAL"
-                    )
-
-                else:
-
-                    self.entry_label.text = (
-                        f"ENTRY SELL DI JAM {entry_time}"
-                    )
-
-                new_data = (
-                    f"{market} | {entry_time} | SELL"
-                )
-
-                if len(self.history_data) == 0 or \
-                   self.history_data[0]["text"] != new_data:
-
-                    self.history_data.insert(
-                        0,
-                        {
-                            "text": new_data,
-                            "type": "sell"
-                        }
-                    )
-
-            # =========================
-            # WAITING
-            # =========================
-            else:
-
-                self.signal_card.set_bg(
-                    (0.2, 0.2, 0.2, 1)
-                )
-
-                self.signal_label.text = (
-                    "SEDANG KONFIGURASI"
-                )
-
-                self.signal_info.text = (
-                    "MENUNGGU SIGNAL"
-                )
-
-                self.entry_label.text = (
-                    "ENTRY : -"
-                )
-
-            # =========================
-            # UPDATE HISTORY
-            # =========================
-            self.history_data = self.history_data[:10]
-
-            for i in range(10):
-
-                if i < len(self.history_data):
-
-                    item = self.history_data[i]
-
-                    self.history_rows[i].label.text = (
-                        item["text"]
-                    )
-
-                    if item["type"] == "buy":
-
-                        self.history_rows[i].set_bg(
-                            (0.0, 0.55, 0.2, 1)
-                        )
-
-                    else:
-
-                        self.history_rows[i].set_bg(
-                            (0.65, 0.0, 0.0, 1)
-                        )
-
-                else:
-
-                    self.history_rows[i].label.text = "-"
-
-                    self.history_rows[i].set_bg(
-                        (0.18, 0.18, 0.2, 1)
-                    )
-
-        except Exception as e:
-
+        except:
             self.signal_label.text = "OFFLINE"
-
-            self.signal_info.text = (
-                "SERVER ERROR"
-            )
-
-            print("ERROR :", e)
 
 
 # =========================
-# MAIN APP
+# APP ROOT (FULL SCREEN FIX)
 # =========================
 class AISignalApp(App):
 
     def build(self):
 
-        root = BoxLayout(
-            orientation="vertical"
-        )
+        root = BoxLayout(orientation="vertical")
 
-        # SCROLL CONTENT
-        scroll = ScrollView()
+        # ✅ CONTENT FULL HEIGHT
+        self.content = Content()
+        self.content.size_hint_y = 1
 
-        content = Content()
+        # NAVBAR FIX BOTTOM
+        navbar = BoxLayout(size_hint_y=None, height=55)
 
-        scroll.add_widget(content)
+        btn1 = Button(text="HOME")
+        btn2 = Button(text="HISTORY")
+        btn3 = Button(text="PROFILE")
 
-        # FIXED NAVBAR
-        navbar = BoxLayout(
-            orientation="horizontal",
-            spacing=8,
-            size_hint_y=None,
-            height=60,
-            padding=5
-        )
+        navbar.add_widget(btn1)
+        navbar.add_widget(btn2)
+        navbar.add_widget(btn3)
 
-        btn_home = Button(
-            text="HOME",
-            font_size=18,
-            background_color=(0.08, 0.08, 0.1, 1)
-        )
-
-        btn_history = Button(
-            text="HISTORY",
-            font_size=18,
-            background_color=(0.08, 0.08, 0.1, 1)
-        )
-
-        btn_profile = Button(
-            text="PROFILE",
-            font_size=18,
-            background_color=(0.08, 0.08, 0.1, 1)
-        )
-
-        navbar.add_widget(btn_home)
-        navbar.add_widget(btn_history)
-        navbar.add_widget(btn_profile)
-
-        root.add_widget(scroll)
+        root.add_widget(self.content)
         root.add_widget(navbar)
 
         return root
@@ -615,5 +257,4 @@ class AISignalApp(App):
 # RUN
 # =========================
 if __name__ == "__main__":
-
     AISignalApp().run()
