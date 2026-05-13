@@ -6,7 +6,7 @@ from datetime import datetime
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.graphics import Color, RoundedRectangle, Line, Ellipse
+from kivy.graphics import Color, RoundedRectangle, Line
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -26,10 +26,12 @@ Window.clearcolor = (0.05, 0.05, 0.07, 1)
 # =========================
 class Card(BoxLayout):
 
-    def __init__(self,
-                 bg=(0.15, 0.15, 0.18, 1),
-                 border=(0.25, 0.25, 0.3, 1),
-                 **kwargs):
+    def __init__(
+        self,
+        bg=(0.15, 0.15, 0.18, 1),
+        border=(0.25, 0.25, 0.3, 1),
+        **kwargs
+    ):
 
         super().__init__(**kwargs)
 
@@ -72,102 +74,109 @@ class Card(BoxLayout):
         )
 
     def set_bg(self, color):
+
         self.bg_color.rgba = color
 
 
 # =========================
-# TECHNOLOGY ANIMATION
+# TECH TEXT ANIMATION
 # =========================
-class TechCard(Card):
+class TechAnimation(Card):
 
     def __init__(self, **kwargs):
 
         super().__init__(
             bg=(0.08, 0.10, 0.13, 1),
             border=(0.1, 0.6, 1, 1),
-            height=90,
+            height=80,
             **kwargs
         )
 
-        self.lines = []
+        self.tech_label = Label(
+            text="◉ SYSTEM ACTIVE ◉",
+            font_size=20,
+            bold=True,
+            color=(0.1, 0.8, 1, 1)
+        )
 
-        with self.canvas.before:
+        self.add_widget(self.tech_label)
 
-            for i in range(8):
+        self.frames = [
+            "◉ SYSTEM ACTIVE ◉",
+            "◉◉ SYSTEM ACTIVE ◉◉",
+            "◉◉◉ SYSTEM ACTIVE ◉◉◉",
+            "◉◉ SYSTEM ACTIVE ◉◉"
+        ]
 
-                Color(0.1, 0.8, 1, 0.8)
+        self.index = 0
 
-                line = RoundedRectangle(
-                    pos=(20 + i * 40, 25),
-                    size=(30, 4),
-                    radius=[4]
-                )
+        Clock.schedule_interval(
+            self.animate,
+            0.3
+        )
 
-                self.lines.append(line)
+    def animate(self, dt):
 
-        Clock.schedule_interval(self.animate_lines, 0.25)
+        self.tech_label.text = self.frames[self.index]
 
-    def animate_lines(self, dt):
+        self.index += 1
 
-        for line in self.lines:
-
-            width = random.randint(20, 120)
-
-            line.size = (width, 4)
+        if self.index >= len(self.frames):
+            self.index = 0
 
 
 # =========================
-# GRAPH ANIMATION
+# GRAPH TEXT ANIMATION
 # =========================
-class GraphCard(Card):
+class GraphAnimation(Card):
 
     def __init__(self, **kwargs):
 
         super().__init__(
             bg=(0.08, 0.10, 0.13, 1),
             border=(0.1, 1, 0.5, 1),
-            height=130,
+            height=100,
             **kwargs
         )
 
-        self.points = []
+        self.graph_label = Label(
+            text="▁▂▃▄▅▆▇",
+            font_size=28,
+            bold=True,
+            color=(0, 1, 0.5, 1)
+        )
 
-        with self.canvas.before:
+        self.add_widget(self.graph_label)
 
-            Color(0, 1, 0.5, 1)
+        self.frames = [
+            "▁▂▃▄▅▆▇",
+            "▂▃▄▅▆▇█",
+            "▄▅▆▇█▆▅",
+            "▇█▆▅▄▃▂",
+            "█▇▆▅▄▃▂"
+        ]
 
-            start_x = 20
+        self.index = 0
 
-            for i in range(12):
+        Clock.schedule_interval(
+            self.animate,
+            0.4
+        )
 
-                y = random.randint(20, 90)
+    def animate(self, dt):
 
-                dot = Ellipse(
-                    pos=(start_x + i * 25, y),
-                    size=(6, 6)
-                )
+        self.graph_label.text = self.frames[self.index]
 
-                self.points.append(dot)
+        self.index += 1
 
-        Clock.schedule_interval(self.animate_graph, 0.7)
-
-    def animate_graph(self, dt):
-
-        x = 20
-
-        for dot in self.points:
-
-            y = random.randint(20, 90)
-
-            dot.pos = (x, y)
-
-            x += 25
+        if self.index >= len(self.frames):
+            self.index = 0
 
 
 # =========================
-# MAIN UI
+# MAIN CONTENT
 # =========================
-class SignalUI(BoxLayout):
+class Content(BoxLayout):
 
     def __init__(self, **kwargs):
 
@@ -179,7 +188,9 @@ class SignalUI(BoxLayout):
             **kwargs
         )
 
-        self.bind(minimum_height=self.setter("height"))
+        self.bind(
+            minimum_height=self.setter("height")
+        )
 
         self.history_data = []
 
@@ -223,7 +234,9 @@ class SignalUI(BoxLayout):
             color=(1, 1, 1, 1)
         )
 
-        self.market_card.add_widget(self.market_label)
+        self.market_card.add_widget(
+            self.market_label
+        )
 
         # CLOCK
         self.clock_card = Card(height=80)
@@ -235,7 +248,9 @@ class SignalUI(BoxLayout):
             color=(0, 1, 0.6, 1)
         )
 
-        self.clock_card.add_widget(self.clock_label)
+        self.clock_card.add_widget(
+            self.clock_label
+        )
 
         row.add_widget(self.market_card)
         row.add_widget(self.clock_card)
@@ -253,7 +268,7 @@ class SignalUI(BoxLayout):
 
         self.signal_label = Label(
             text="SEDANG KONFIGURASI",
-            font_size=44,
+            font_size=42,
             bold=True,
             color=(1, 1, 1, 1)
         )
@@ -264,8 +279,13 @@ class SignalUI(BoxLayout):
             color=(1, 1, 1, 1)
         )
 
-        self.signal_card.add_widget(self.signal_label)
-        self.signal_card.add_widget(self.signal_info)
+        self.signal_card.add_widget(
+            self.signal_label
+        )
+
+        self.signal_card.add_widget(
+            self.signal_info
+        )
 
         self.add_widget(self.signal_card)
 
@@ -281,23 +301,25 @@ class SignalUI(BoxLayout):
             color=(1, 1, 1, 1)
         )
 
-        self.entry_card.add_widget(self.entry_label)
+        self.entry_card.add_widget(
+            self.entry_label
+        )
 
         self.add_widget(self.entry_card)
 
         # =========================
-        # TECHNOLOGY CARD
+        # TECHNOLOGY ANIMATION
         # =========================
-        self.tech_card = TechCard()
+        self.tech_animation = TechAnimation()
 
-        self.add_widget(self.tech_card)
+        self.add_widget(self.tech_animation)
 
         # =========================
-        # GRAPH CARD
+        # GRAPH ANIMATION
         # =========================
-        self.graph_card = GraphCard()
+        self.graph_animation = GraphAnimation()
 
-        self.add_widget(self.graph_card)
+        self.add_widget(self.graph_animation)
 
         # =========================
         # HISTORY CARD
@@ -316,21 +338,200 @@ class SignalUI(BoxLayout):
         )
 
         self.history_label.bind(
-            size=self.history_label.setter("text_size")
+            size=self.history_label.setter(
+                "text_size"
+            )
         )
 
-        self.history_card.add_widget(self.history_label)
+        self.history_card.add_widget(
+            self.history_label
+        )
 
         self.add_widget(self.history_card)
 
         # =========================
-        # BOTTOM MENU
+        # LOOP
         # =========================
-        bottom_menu = BoxLayout(
+        Clock.schedule_interval(
+            self.update_clock,
+            1
+        )
+
+        Clock.schedule_interval(
+            self.load_signal,
+            2
+        )
+
+    # =========================
+    # CLOCK
+    # =========================
+    def update_clock(self, dt):
+
+        self.clock_label.text = datetime.now().strftime(
+            "%H:%M:%S"
+        )
+
+    # =========================
+    # LOAD SIGNAL
+    # =========================
+    def load_signal(self, dt):
+
+        try:
+
+            r = requests.get(
+                DATA_URL + "?t=" + str(time.time()),
+                timeout=5
+            )
+
+            data = r.json()
+
+            signal = data.get(
+                "signal",
+                "WAITING"
+            )
+
+            market = data.get(
+                "market",
+                "-"
+            )
+
+            entry_time = data.get(
+                "entry_time",
+                "-"
+            )
+
+            self.market_label.text = (
+                f"MARKET : {market}"
+            )
+
+            # =========================
+            # BUY
+            # =========================
+            if signal.upper() == "BUY":
+
+                self.signal_card.set_bg(
+                    (0.0, 0.75, 0.2, 1)
+                )
+
+                self.signal_label.text = "BUY NOW"
+
+                self.signal_info.text = (
+                    "AI SIGNAL ACTIVE"
+                )
+
+                self.entry_label.text = (
+                    f"ENTRY BUY DI JAM {entry_time}"
+                )
+
+                if len(self.history_data) == 0 or \
+                   self.history_data[0] != f"BUY - {entry_time}":
+
+                    self.history_data.insert(
+                        0,
+                        f"BUY - {entry_time}"
+                    )
+
+            # =========================
+            # SELL
+            # =========================
+            elif signal.upper() == "SELL":
+
+                self.signal_card.set_bg(
+                    (0.85, 0.0, 0.0, 1)
+                )
+
+                self.signal_label.text = "SELL NOW"
+
+                self.signal_info.text = (
+                    "AI SIGNAL ACTIVE"
+                )
+
+                self.entry_label.text = (
+                    f"ENTRY SELL DI JAM {entry_time}"
+                )
+
+                if len(self.history_data) == 0 or \
+                   self.history_data[0] != f"SELL - {entry_time}":
+
+                    self.history_data.insert(
+                        0,
+                        f"SELL - {entry_time}"
+                    )
+
+            # =========================
+            # WAITING
+            # =========================
+            else:
+
+                self.signal_card.set_bg(
+                    (0.2, 0.2, 0.2, 1)
+                )
+
+                self.signal_label.text = (
+                    "SEDANG KONFIGURASI"
+                )
+
+                self.signal_info.text = (
+                    "MENUNGGU SIGNAL"
+                )
+
+                self.entry_label.text = (
+                    "ENTRY : -"
+                )
+
+            # =========================
+            # HISTORY
+            # =========================
+            self.history_data = self.history_data[:6]
+
+            history_text = "HISTORY SIGNAL\n\n"
+
+            for item in self.history_data:
+
+                history_text += f"• {item}\n"
+
+            self.history_label.text = history_text
+
+        except Exception as e:
+
+            self.signal_label.text = "OFFLINE"
+
+            self.signal_info.text = (
+                "SERVER ERROR"
+            )
+
+            print("ERROR :", e)
+
+
+# =========================
+# MAIN APP
+# =========================
+class AISignalApp(App):
+
+    def build(self):
+
+        root = BoxLayout(
+            orientation="vertical"
+        )
+
+        # =========================
+        # SCROLL CONTENT
+        # =========================
+        scroll = ScrollView()
+
+        content = Content()
+
+        scroll.add_widget(content)
+
+        # =========================
+        # FIXED BOTTOM NAVBAR
+        # =========================
+        navbar = BoxLayout(
             orientation="horizontal",
             spacing=8,
             size_hint_y=None,
-            height=60
+            height=60,
+            padding=5
         )
 
         btn_home = Button(
@@ -351,134 +552,15 @@ class SignalUI(BoxLayout):
             background_color=(0.08, 0.08, 0.1, 1)
         )
 
-        bottom_menu.add_widget(btn_home)
-        bottom_menu.add_widget(btn_history)
-        bottom_menu.add_widget(btn_profile)
-
-        self.add_widget(bottom_menu)
+        navbar.add_widget(btn_home)
+        navbar.add_widget(btn_history)
+        navbar.add_widget(btn_profile)
 
         # =========================
-        # LOOP
+        # ADD ROOT
         # =========================
-        Clock.schedule_interval(self.update_clock, 1)
-        Clock.schedule_interval(self.load_signal, 2)
-
-    # =========================
-    # CLOCK
-    # =========================
-    def update_clock(self, dt):
-
-        self.clock_label.text = datetime.now().strftime("%H:%M:%S")
-
-    # =========================
-    # LOAD SIGNAL
-    # =========================
-    def load_signal(self, dt):
-
-        try:
-
-            r = requests.get(
-                DATA_URL + "?t=" + str(time.time()),
-                timeout=5
-            )
-
-            data = r.json()
-
-            signal = data.get("signal", "WAITING")
-            market = data.get("market", "-")
-            entry_time = data.get("entry_time", "-")
-
-            self.market_label.text = f"MARKET : {market}"
-
-            # =========================
-            # BUY
-            # =========================
-            if signal.upper() == "BUY":
-
-                self.signal_card.set_bg((0.0, 0.75, 0.2, 1))
-
-                self.signal_label.text = "BUY NOW"
-                self.signal_info.text = "AI SIGNAL ACTIVE"
-
-                self.entry_label.text = (
-                    f"ENTRY BUY DI JAM {entry_time}"
-                )
-
-                if len(self.history_data) == 0 or \
-                   self.history_data[0] != f"BUY - {entry_time}":
-
-                    self.history_data.insert(
-                        0,
-                        f"BUY - {entry_time}"
-                    )
-
-            # =========================
-            # SELL
-            # =========================
-            elif signal.upper() == "SELL":
-
-                self.signal_card.set_bg((0.85, 0.0, 0.0, 1))
-
-                self.signal_label.text = "SELL NOW"
-                self.signal_info.text = "AI SIGNAL ACTIVE"
-
-                self.entry_label.text = (
-                    f"ENTRY SELL DI JAM {entry_time}"
-                )
-
-                if len(self.history_data) == 0 or \
-                   self.history_data[0] != f"SELL - {entry_time}":
-
-                    self.history_data.insert(
-                        0,
-                        f"SELL - {entry_time}"
-                    )
-
-            # =========================
-            # WAITING
-            # =========================
-            else:
-
-                self.signal_card.set_bg((0.2, 0.2, 0.2, 1))
-
-                self.signal_label.text = "SEDANG KONFIGURASI"
-                self.signal_info.text = "MENUNGGU SIGNAL"
-
-                self.entry_label.text = "ENTRY : -"
-
-            # =========================
-            # HISTORY
-            # =========================
-            self.history_data = self.history_data[:6]
-
-            history_text = "HISTORY SIGNAL\n\n"
-
-            for item in self.history_data:
-
-                history_text += f"• {item}\n"
-
-            self.history_label.text = history_text
-
-        except Exception as e:
-
-            self.signal_label.text = "OFFLINE"
-            self.signal_info.text = "SERVER ERROR"
-
-            print("ERROR :", e)
-
-
-# =========================
-# APP
-# =========================
-class AISignalApp(App):
-
-    def build(self):
-
-        root = ScrollView()
-
-        ui = SignalUI()
-
-        root.add_widget(ui)
+        root.add_widget(scroll)
+        root.add_widget(navbar)
 
         return root
 
@@ -487,4 +569,5 @@ class AISignalApp(App):
 # RUN
 # =========================
 if __name__ == "__main__":
+
     AISignalApp().run()
