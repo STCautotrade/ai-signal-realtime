@@ -5,7 +5,6 @@ import os
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -17,37 +16,35 @@ from kivy.graphics import Color, RoundedRectangle, Line
 
 
 DATA_URL = "http://157.10.252.46:5000/signal"
-Window.clearcolor = (0.02, 0.02, 0.05, 1)
-
 BASE_DIR = os.path.dirname(__file__)
 
 
 # =========================
-# NEON CARD
+# CARD
 # =========================
 class Card(BoxLayout):
-    def __init__(self, bg=(0.1,0.1,0.15,1), border=(0.2,0.7,1,1), h=100, **kwargs):
+    def __init__(self, bg=(0.1,0.1,0.15,1), border=(0.2,0.7,1,1), h=90, **kwargs):
         super().__init__(**kwargs)
         self.orientation = "vertical"
-        self.padding = dp(6)
+        self.padding = dp(5)
         self.spacing = dp(3)
         self.size_hint_y = None
         self.height = dp(h)
 
         with self.canvas.before:
             self.bg = Color(*bg)
-            self.rect = RoundedRectangle(radius=[16])
+            self.rect = RoundedRectangle(radius=[14])
 
         with self.canvas.after:
             self.border = Color(*border)
-            self.line = Line(rounded_rectangle=(0,0,0,0,16), width=1.2)
+            self.line = Line(rounded_rectangle=(0,0,0,0,14), width=1)
 
         self.bind(pos=self.update, size=self.update)
 
     def update(self, *args):
         self.rect.pos = self.pos
         self.rect.size = self.size
-        self.line.rounded_rectangle = (*self.pos, *self.size, 16)
+        self.line.rounded_rectangle = (*self.pos, *self.size, 14)
 
     def set_bg(self, c):
         self.bg.rgba = c
@@ -57,84 +54,37 @@ class Card(BoxLayout):
 # HISTORY ROW
 # =========================
 class HistoryRow(Card):
-    def __init__(self, text, t="empty", **kwargs):
-        border = (0.2,0.5,1,0.3)
-
-        super().__init__(bg=(0.08,0.08,0.12,1), border=border, h=32, **kwargs)
-
-        self.label = Label(
-            text=text,
-            font_size=dp(10),
-            bold=True,
-            color=(1,1,1,1)
-        )
+    def __init__(self, text):
+        super().__init__(h=28)
+        self.label = Label(text=text, font_size=dp(9))
         self.add_widget(self.label)
 
 
 # =========================
-# MARTINGALE CALC
+# HOME
 # =========================
-class Martingale(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+class Home(Screen):
 
-        root = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(10))
+    def __init__(self, **kw):
+        super().__init__(**kw)
 
-        self.input = Label(text="BASE : 14000", font_size=dp(18), bold=True)
+        root = BoxLayout(orientation="vertical", spacing=dp(5), padding=dp(6))
 
-        self.result = Label(text="", font_size=dp(14))
-
-        self.calc = Button(text="CALCULATE", size_hint_y=None, height=dp(50))
-        self.calc.bind(on_press=self.run_calc)
-
-        root.add_widget(self.input)
-        root.add_widget(self.calc)
-        root.add_widget(self.result)
-
-        self.add_widget(root)
-
-    def run_calc(self, instance):
-        base = 14000
-        mults = [2, 2.5, 3, 4]
-
-        out = ""
-        for m in mults:
-            out += f"\nMULT {m}\n"
-            val = base
-            for i in range(1, 11):
-                val *= m
-                out += f"K{i} = {int(val)}\n"
-
-        self.result.text = out
-
-
-# =========================
-# DASHBOARD (HOME)
-# =========================
-class Dashboard(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.history = []
-
-        root = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
-
-        # ================= LOGO =================
-        logo = Image(
+        # LOGO
+        root.add_widget(Image(
             source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
             size_hint_y=None,
-            height=dp(140)
-        )
-        root.add_widget(logo)
+            height=dp(120)
+        ))
 
-        # ================= MARKET + CLOCK (2 CARD 1 ROW) =================
-        row = BoxLayout(size_hint_y=None, height=dp(60), spacing=dp(6))
+        # MARKET + CLOCK (2 CARD 1 ROW)
+        row = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(5))
 
-        self.market = Card(h=60)
-        self.clock = Card(h=60)
+        self.market = Card(h=50)
+        self.clock = Card(h=50)
 
-        self.market_label = Label(text="CRYPTO IDX 85%", font_size=dp(14))
-        self.clock_label = Label(text="00:00:00 WIB", font_size=dp(14))
+        self.market_label = Label(text="CRYPTO IDX 85%")
+        self.clock_label = Label(text="00:00:00 WIB")
 
         self.market.add_widget(self.market_label)
         self.clock.add_widget(self.clock_label)
@@ -144,26 +94,25 @@ class Dashboard(Screen):
 
         root.add_widget(row)
 
-        # ================= SIGNAL =================
-        self.signal_card = Card(h=120)
+        # SIGNAL
+        self.signal = Card(h=110)
+        self.signal_label = Label(text="MENUNGGU SIGNAL", font_size=dp(18))
+        self.entry = Label(text="ENTRY : -", font_size=dp(12))
+        self.status = Label(text="SYSTEM", font_size=dp(10))
 
-        self.signal_label = Label(text="MENUNGGU SIGNAL", font_size=dp(26), bold=True)
-        self.entry_text = Label(text="ENTRY : -", font_size=dp(14))
-        self.status_text = Label(text="SYSTEM", font_size=dp(14))
+        self.signal.add_widget(self.signal_label)
+        self.signal.add_widget(self.entry)
+        self.signal.add_widget(self.status)
 
-        self.signal_card.add_widget(self.signal_label)
-        self.signal_card.add_widget(self.entry_text)
-        self.signal_card.add_widget(self.status_text)
+        root.add_widget(self.signal)
 
-        root.add_widget(self.signal_card)
-
-        # ================= HISTORY =================
-        root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(30)))
+        # HISTORY
+        root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
         self.box = BoxLayout(orientation="vertical", spacing=dp(2))
-
         self.rows = []
-        for i in range(10):
+
+        for i in range(6):
             r = HistoryRow("-")
             self.rows.append(r)
             self.box.add_widget(r)
@@ -171,6 +120,8 @@ class Dashboard(Screen):
         root.add_widget(self.box)
 
         self.add_widget(root)
+
+        self.history = []
 
         Clock.schedule_interval(self.load, 2)
         Clock.schedule_interval(self.clock_update, 1)
@@ -192,24 +143,22 @@ class Dashboard(Screen):
             entry = data.get("entry_time", "-")
 
             if signal == "BUY":
-                self.signal_card.set_bg((0,0.8,0.3,1))
-                self.signal_label.text = "ENTRY BUY"
-                self.entry_text.text = f"BUY {entry}"
-
+                self.signal.set_bg((0,0.7,0.3,1))
+                self.signal_label.text = "BUY"
+                self.entry.text = f"BUY {entry}"
             elif signal == "SELL":
-                self.signal_card.set_bg((1,0.1,0.2,1))
-                self.signal_label.text = "ENTRY SELL"
-                self.entry_text.text = f"SELL {entry}"
-
+                self.signal.set_bg((0.8,0.1,0.2,1))
+                self.signal_label.text = "SELL"
+                self.entry.text = f"SELL {entry}"
             else:
-                self.signal_card.set_bg((0.1,0.1,0.15,1))
+                self.signal.set_bg((0.1,0.1,0.15,1))
                 self.signal_label.text = "WAITING"
-                self.entry_text.text = "-"
+                self.entry.text = "-"
 
             self.history.insert(0, f"{signal} | {entry}")
-            self.history = self.history[:10]
+            self.history = self.history[:6]
 
-            for i in range(10):
+            for i in range(6):
                 self.rows[i].label.text = self.history[i] if i < len(self.history) else "-"
 
         except:
@@ -217,57 +166,67 @@ class Dashboard(Screen):
 
 
 # =========================
-# HISTORY SCREEN
+# MARTINGALE (KECIL)
 # =========================
-class History(Screen):
-    def __init__(self, dashboard, **kwargs):
-        super().__init__(**kwargs)
+class Martingale(Screen):
 
-        self.dash = dashboard
-        self.box = BoxLayout(orientation="vertical")
+    def __init__(self, **kw):
+        super().__init__(**kw)
 
-        self.box.add_widget(Label(text="HISTORY VIEW"))
+        root = BoxLayout(orientation="vertical", padding=dp(8), spacing=dp(5))
 
-        self.add_widget(self.box)
+        self.base = 14000
+
+        root.add_widget(Label(text="MARTINGALE", font_size=dp(14), size_hint_y=None, height=dp(20)))
+
+        self.result = Label(font_size=dp(10))
+
+        btn = Button(text="HITUNG", size_hint_y=None, height=dp(35))
+        btn.bind(on_press=self.calc)
+
+        root.add_widget(btn)
+        root.add_widget(self.result)
+
+        self.add_widget(root)
+
+    def calc(self, instance):
+
+        mults = [2, 2.5, 3, 4]
+
+        out = ""
+        for m in mults:
+            val = self.base
+            out += f"\nX{m}\n"
+            for i in range(1, 11):
+                val *= m
+                out += f"K{i}: {int(val)}\n"
+
+        self.result.text = out
 
 
 # =========================
 # APP
 # =========================
-class AISignalApp(App):
+class AppMain(App):
 
     def build(self):
 
-        self.sm = ScreenManager()
+        sm = ScreenManager()
 
-        self.home = Dashboard(name="home")
-        self.history = History(self.home, name="history")
-        self.martingale = Martingale(name="martingale")
+        self.home = Home(name="home")
+        self.mart = Martingale(name="martingale")
 
-        self.sm.add_widget(self.home)
-        self.sm.add_widget(self.history)
-        self.sm.add_widget(self.martingale)
+        sm.add_widget(self.home)
+        sm.add_widget(self.mart)
 
         root = BoxLayout(orientation="vertical")
+        root.add_widget(sm)
 
-        root.add_widget(self.sm)
+        nav = BoxLayout(size_hint_y=None, height=dp(50))
 
-        nav = BoxLayout(size_hint_y=None, height=dp(55))
-
-        btn_home = Button(text="HOME")
-        btn_history = Button(text="HISTORY")
-        btn_trade = Button(text="TRADE")
-        btn_m = Button(text="MARTINGALE")
-
-        btn_home.bind(on_press=lambda x: self.sm.switch_to(self.home))
-        btn_history.bind(on_press=lambda x: self.sm.switch_to(self.history))
-        btn_trade.bind(on_press=lambda x: webbrowser.open("https://stcbroker.id"))
-        btn_m.bind(on_press=lambda x: self.sm.switch_to(self.martingale))
-
-        nav.add_widget(btn_home)
-        nav.add_widget(btn_history)
-        nav.add_widget(btn_trade)
-        nav.add_widget(btn_m)
+        nav.add_widget(Button(text="HOME", on_press=lambda x: sm.switch_to(self.home)))
+        nav.add_widget(Button(text="MARTINGALE", on_press=lambda x: sm.switch_to(self.mart)))
+        nav.add_widget(Button(text="TRADE", on_press=lambda x: webbrowser.open("https://stcbroker.id")))
 
         root.add_widget(nav)
 
@@ -275,4 +234,4 @@ class AISignalApp(App):
 
 
 if __name__ == "__main__":
-    AISignalApp().run()
+    AppMain().run()
