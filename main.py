@@ -1,5 +1,6 @@
 import requests
 from datetime import datetime
+import webbrowser   # <-- TAMBAHAN
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -8,6 +9,7 @@ from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.button import Button   # <-- TAMBAHAN
 from kivy.graphics import Color, RoundedRectangle, Line
 
 
@@ -155,11 +157,11 @@ class Dashboard(BoxLayout):
 
         self.add_widget(self.history_title)
 
-        # ================= HISTORY (5 ROW ONLY) =================
+        # ================= HISTORY (8 ROW ONLY) =================
         self.history_box = BoxLayout(orientation="vertical", spacing=dp(2))
 
         self.rows = []
-        for i in range(5):
+        for i in range(8):   # <-- FIX 8 ROW
             r = HistoryRow("-", "empty")
             self.rows.append(r)
             self.history_box.add_widget(r)
@@ -239,10 +241,10 @@ class Dashboard(BoxLayout):
         if not self.history or self.history[0]["text"] != text:
             self.history.insert(0, {"text": text, "type": t})
 
-        self.history = self.history[:5]
+        self.history = self.history[:8]   # <-- FIX 8 ROW
 
     def update_history_ui(self):
-        for i in range(5):
+        for i in range(8):   # <-- FIX 8 ROW
             if i < len(self.history):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
@@ -261,6 +263,9 @@ class Dashboard(BoxLayout):
 # =========================
 class AISignalApp(App):
 
+    def open_trade(self, instance):
+        webbrowser.open("https://stcbroker.id")
+
     def build(self):
 
         root = BoxLayout(orientation="vertical")
@@ -270,11 +275,20 @@ class AISignalApp(App):
 
         root.add_widget(scroll)
 
+        # ================= NAVBAR =================
         nav = BoxLayout(size_hint_y=None, height=dp(55))
 
         nav.add_widget(Label(text="HOME"))
         nav.add_widget(Label(text="HISTORY"))
-        nav.add_widget(Label(text="TRADE"))
+
+        btn_trade = Button(
+            text="TRADE",
+            font_size=dp(14),
+            background_color=(0.08,0.08,0.1,1)
+        )
+        btn_trade.bind(on_press=self.open_trade)
+
+        nav.add_widget(btn_trade)
 
         root.add_widget(nav)
 
