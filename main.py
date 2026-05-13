@@ -55,7 +55,7 @@ class Card(BoxLayout):
 # =========================
 class HistoryRow(Card):
     def __init__(self, text):
-        super().__init__(h=28)
+        super().__init__(h=26, bg=(0.08,0.08,0.12,1))
         self.label = Label(text=text, font_size=dp(9))
         self.add_widget(self.label)
 
@@ -74,17 +74,17 @@ class Home(Screen):
         root.add_widget(Image(
             source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
             size_hint_y=None,
-            height=dp(120)
+            height=dp(140)
         ))
 
-        # MARKET + CLOCK (2 CARD 1 ROW)
+        # MARKET + CLOCK
         row = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(5))
 
         self.market = Card(h=50)
         self.clock = Card(h=50)
 
-        self.market_label = Label(text="CRYPTO IDX 85%")
-        self.clock_label = Label(text="00:00:00 WIB")
+        self.market_label = Label(text="CRYPTO IDX 85%", font_size=dp(11))
+        self.clock_label = Label(text="00:00:00 WIB", font_size=dp(11))
 
         self.market.add_widget(self.market_label)
         self.clock.add_widget(self.clock_label)
@@ -95,10 +95,11 @@ class Home(Screen):
         root.add_widget(row)
 
         # SIGNAL
-        self.signal = Card(h=110)
+        self.signal = Card(h=120)
+
         self.signal_label = Label(text="MENUNGGU SIGNAL", font_size=dp(18))
         self.entry = Label(text="ENTRY : -", font_size=dp(12))
-        self.status = Label(text="SYSTEM", font_size=dp(10))
+        self.status = Label(text="SYSTEM STANDBY", font_size=dp(10))
 
         self.signal.add_widget(self.signal_label)
         self.signal.add_widget(self.entry)
@@ -106,18 +107,25 @@ class Home(Screen):
 
         root.add_widget(self.signal)
 
-        # HISTORY
+        # HISTORY TITLE
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
-        self.box = BoxLayout(orientation="vertical", spacing=dp(2))
-        self.rows = []
+        # ================= HISTORY SCROLL (INI FIX UTAMA) =================
+        self.history_scroll = ScrollView(
+            size_hint=(1, None),
+            height=dp(220),   # BATAS BIAR TIDAK NUTUP MENU BAWAH
+        )
 
-        for i in range(6):
-            r = HistoryRow("-")
-            self.rows.append(r)
-            self.box.add_widget(r)
+        self.history_box = BoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            spacing=dp(2)
+        )
 
-        root.add_widget(self.box)
+        self.history_box.bind(minimum_height=self.history_box.setter("height"))
+
+        self.history_scroll.add_widget(self.history_box)
+        root.add_widget(self.history_scroll)
 
         self.add_widget(root)
 
@@ -128,12 +136,6 @@ class Home(Screen):
 
     def clock_update(self, dt):
         self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
-
-    def expired(self, t):
-        try:
-            return datetime.now().strftime("%H:%M") > t
-        except:
-            return False
 
     def load(self, dt):
         try:
@@ -146,42 +148,47 @@ class Home(Screen):
                 self.signal.set_bg((0,0.7,0.3,1))
                 self.signal_label.text = "BUY"
                 self.entry.text = f"BUY {entry}"
+
             elif signal == "SELL":
                 self.signal.set_bg((0.8,0.1,0.2,1))
                 self.signal_label.text = "SELL"
                 self.entry.text = f"SELL {entry}"
+
             else:
                 self.signal.set_bg((0.1,0.1,0.15,1))
                 self.signal_label.text = "WAITING"
                 self.entry.text = "-"
 
-            self.history.insert(0, f"{signal} | {entry}")
-            self.history = self.history[:6]
+            # ================= ADD HISTORY UNLIMITED =================
+            text = f"{signal} | {entry}"
 
-            for i in range(6):
-                self.rows[i].label.text = self.history[i] if i < len(self.history) else "-"
+            if not self.history or self.history[0] != text:
+                self.history.insert(0, text)
+
+                row = HistoryRow(text)
+                self.history_box.add_widget(row, index=0)
 
         except:
             self.signal_label.text = "OFFLINE"
 
 
 # =========================
-# MARTINGALE (KECIL)
+# MARTINGALE
 # =========================
 class Martingale(Screen):
 
     def __init__(self, **kw):
         super().__init__(**kw)
 
-        root = BoxLayout(orientation="vertical", padding=dp(8), spacing=dp(5))
+        root = BoxLayout(orientation="vertical", padding=dp(8))
 
         self.base = 14000
 
-        root.add_widget(Label(text="MARTINGALE", font_size=dp(14), size_hint_y=None, height=dp(20)))
+        root.add_widget(Label(text="MARTINGALE", font_size=dp(14)))
 
         self.result = Label(font_size=dp(10))
 
-        btn = Button(text="HITUNG", size_hint_y=None, height=dp(35))
+        btn = Button(text="HITUNG", size_hint_y=None, height=dp(40))
         btn.bind(on_press=self.calc)
 
         root.add_widget(btn)
@@ -190,7 +197,6 @@ class Martingale(Screen):
         self.add_widget(root)
 
     def calc(self, instance):
-
         mults = [2, 2.5, 3, 4]
 
         out = ""
@@ -213,19 +219,19 @@ class AppMain(App):
 
         sm = ScreenManager()
 
-        self.home = Home(name="home")
-        self.mart = Martingale(name="martingale")
+        home = Home(name="home")
+        mart = Martingale(name="mart")
 
-        sm.add_widget(self.home)
-        sm.add_widget(self.mart)
+        sm.add_widget(home)
+        sm.add_widget(mart)
 
         root = BoxLayout(orientation="vertical")
         root.add_widget(sm)
 
         nav = BoxLayout(size_hint_y=None, height=dp(50))
 
-        nav.add_widget(Button(text="HOME", on_press=lambda x: sm.switch_to(self.home)))
-        nav.add_widget(Button(text="MARTINGALE", on_press=lambda x: sm.switch_to(self.mart)))
+        nav.add_widget(Button(text="HOME", on_press=lambda x: sm.switch_to(home)))
+        nav.add_widget(Button(text="MART", on_press=lambda x: sm.switch_to(mart)))
         nav.add_widget(Button(text="TRADE", on_press=lambda x: webbrowser.open("https://stcbroker.id")))
 
         root.add_widget(nav)
