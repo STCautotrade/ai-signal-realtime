@@ -91,7 +91,7 @@ class Dashboard(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
-        # ================= LOGO (PAKAI PNG KAMU) =================
+        # ================= LOGO =================
         logo_box = BoxLayout(
             size_hint_y=None,
             height=dp(110),
@@ -107,25 +107,32 @@ class Dashboard(BoxLayout):
         logo_box.add_widget(self.logo)
         self.add_widget(logo_box)
 
-        # ================= MARKET + CLOCK =================
+        # ================= MARKET + CLOCK (FIXED 2 COLUMN 1 ROW) =================
         market_row = BoxLayout(
             orientation="horizontal",
             size_hint_y=None,
-            height=dp(40),
-            spacing=dp(10)
+            height=dp(38),
+            spacing=dp(8),
+            padding=[dp(6), 0, dp(6), 0]
         )
 
         self.market = Label(
             text="MARKET : CRYPTO IDX 85%",
-            font_size=dp(16),
-            bold=True
+            font_size=dp(12),
+            bold=True,
+            halign="left",
+            valign="middle"
         )
+        self.market.bind(size=self.market.setter("text_size"))
 
         self.clock = Label(
             text="00:00:00 WIB",
-            font_size=dp(16),
-            bold=True
+            font_size=dp(12),
+            bold=True,
+            halign="right",
+            valign="middle"
         )
+        self.clock.bind(size=self.clock.setter("text_size"))
 
         market_row.add_widget(self.market)
         market_row.add_widget(self.clock)
@@ -258,7 +265,7 @@ class Dashboard(BoxLayout):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
 
-                # TRANSPARAN HISTORY (TIDAK IKUT WARNA SIGNAL UTAMA)
+                # TRANSPARAN HISTORY
                 if h["type"] == "BUY":
                     self.rows[i].set_bg((0, 1, 0.4, 0.15))
                 else:
