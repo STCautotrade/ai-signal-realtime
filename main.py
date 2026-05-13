@@ -18,17 +18,17 @@ DATA_URL = "http://157.10.252.46:5000/signal"
 
 
 # =========================
-# WINDOW
+# WINDOW BACKGROUND
 # =========================
-Window.clearcolor = (0.07, 0.07, 0.08, 1)
+Window.clearcolor = (0.06, 0.06, 0.08, 1)
 
 
 # =========================
-# CARD COMPONENT
+# CARD CLASS
 # =========================
 class Card(BoxLayout):
 
-    def __init__(self, bg=(0.15, 0.15, 0.17, 1), **kwargs):
+    def __init__(self, bg=(0.15, 0.15, 0.18, 1), **kwargs):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
@@ -37,7 +37,7 @@ class Card(BoxLayout):
         self.size_hint_y = None
 
         with self.canvas.before:
-            Color(*bg)
+            self.color = Color(*bg)
             self.rect = RoundedRectangle(radius=[22])
 
         self.bind(pos=self.update_rect, size=self.update_rect)
@@ -45,6 +45,9 @@ class Card(BoxLayout):
     def update_rect(self, *args):
         self.rect.pos = self.pos
         self.rect.size = self.size
+
+    def set_bg(self, color):
+        self.color.rgba = color
 
 
 # =========================
@@ -113,7 +116,7 @@ class SignalUI(BoxLayout):
         # =========================
         self.signal_card = Card(
             bg=(0.2, 0.2, 0.2, 1),
-            height=260
+            height=240
         )
 
         signal_box = BoxLayout(
@@ -123,7 +126,7 @@ class SignalUI(BoxLayout):
 
         self.signal_label = Label(
             text="SEDANG KONFIGURASI",
-            font_size=40,
+            font_size=42,
             bold=True,
             color=(1, 1, 1, 1)
         )
@@ -131,7 +134,7 @@ class SignalUI(BoxLayout):
         self.signal_info = Label(
             text="MENUNGGU SIGNAL",
             font_size=18,
-            color=(0.9, 0.9, 0.9, 1)
+            color=(1, 1, 1, 1)
         )
 
         signal_box.add_widget(self.signal_label)
@@ -171,7 +174,7 @@ class SignalUI(BoxLayout):
         )
 
         self.history_label.bind(
-            size=self.history_label.setter('text_size')
+            size=self.history_label.setter("text_size")
         )
 
         self.history_card.add_widget(self.history_label)
@@ -189,20 +192,20 @@ class SignalUI(BoxLayout):
 
         btn_home = Button(
             text="HOME",
-            font_size=20,
-            background_color=(0.12, 0.12, 0.14, 1)
+            font_size=18,
+            background_color=(0.1, 0.1, 0.12, 1)
         )
 
         btn_history = Button(
             text="HISTORY",
-            font_size=20,
-            background_color=(0.12, 0.12, 0.14, 1)
+            font_size=18,
+            background_color=(0.1, 0.1, 0.12, 1)
         )
 
         btn_profile = Button(
             text="PROFILE",
-            font_size=20,
-            background_color=(0.12, 0.12, 0.14, 1)
+            font_size=18,
+            background_color=(0.1, 0.1, 0.12, 1)
         )
 
         bottom_menu.add_widget(btn_home)
@@ -222,22 +225,6 @@ class SignalUI(BoxLayout):
     # =========================
     def update_clock(self, dt):
         self.clock_label.text = datetime.now().strftime("%H:%M:%S")
-
-    # =========================
-    # UPDATE SIGNAL COLOR
-    # =========================
-    def update_signal_color(self, color):
-
-        self.signal_card.canvas.before.clear()
-
-        with self.signal_card.canvas.before:
-            Color(*color)
-            self.signal_card.rect = RoundedRectangle(radius=[22])
-
-        self.signal_card.bind(
-            pos=self.signal_card.update_rect,
-            size=self.signal_card.update_rect
-        )
 
     # =========================
     # LOAD SIGNAL
@@ -267,7 +254,7 @@ class SignalUI(BoxLayout):
             # =========================
             if signal.upper() == "BUY":
 
-                self.update_signal_color((0.0, 0.65, 0.25, 1))
+                self.signal_card.set_bg((0.0, 0.65, 0.25, 1))
 
                 self.signal_label.text = "ENTRY BUY"
                 self.signal_info.text = "AI SIGNAL ACTIVE"
@@ -289,7 +276,7 @@ class SignalUI(BoxLayout):
             # =========================
             elif signal.upper() == "SELL":
 
-                self.update_signal_color((0.8, 0.0, 0.0, 1))
+                self.signal_card.set_bg((0.8, 0.0, 0.0, 1))
 
                 self.signal_label.text = "ENTRY SELL"
                 self.signal_info.text = "AI SIGNAL ACTIVE"
@@ -311,7 +298,7 @@ class SignalUI(BoxLayout):
             # =========================
             else:
 
-                self.update_signal_color((0.2, 0.2, 0.2, 1))
+                self.signal_card.set_bg((0.2, 0.2, 0.2, 1))
 
                 self.signal_label.text = "SEDANG KONFIGURASI"
                 self.signal_info.text = "MENUNGGU SIGNAL"
