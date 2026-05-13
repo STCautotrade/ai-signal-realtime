@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime
-import webbrowser   # <-- TAMBAHAN
+import webbrowser
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -9,7 +9,7 @@ from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.button import Button   # <-- TAMBAHAN
+from kivy.uix.button import Button
 from kivy.graphics import Color, RoundedRectangle, Line
 
 
@@ -67,11 +67,11 @@ class HistoryRow(Card):
         else:
             border = (0.2,0.5,1,1)
 
-        super().__init__(bg=bg, border=border, h=32, **kwargs)
+        super().__init__(bg=bg, border=border, h=30, **kwargs)
 
         self.label = Label(
             text=text,
-            font_size=dp(11),
+            font_size=dp(10),
             bold=True,
             color=(1,1,1,1)
         )
@@ -87,36 +87,26 @@ class Dashboard(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
-        # ================= TITLE =================
+        # ================= TITLE (ROBOT STYLE) =================
         self.title = Label(
-            text="AI SIGNAL PRO",
-            font_size=dp(42),
+            text="A I   S I G N A L   P R O",
+            font_size=dp(40),
             bold=True,
             color=(0.1,0.8,1,1),
             size_hint_y=None,
-            height=dp(60)
+            height=dp(65)
         )
         self.add_widget(self.title)
 
-        # ================= MARKET + TIME (1 CARD) =================
-        self.market_card = Card(h=70)
-
-        self.market_label = Label(
+        # ================= MARKET + TIME =================
+        self.market = Label(
             text="MARKET : CRYPTO IDX 85%",
             font_size=dp(16),
-            bold=True
+            bold=True,
+            size_hint_y=None,
+            height=dp(40)
         )
-
-        self.clock_label = Label(
-            text="00:00:00 WIB",
-            font_size=dp(18),
-            bold=True
-        )
-
-        self.market_card.add_widget(self.market_label)
-        self.market_card.add_widget(self.clock_label)
-
-        self.add_widget(self.market_card)
+        self.add_widget(self.market)
 
         # ================= SIGNAL CARD =================
         self.signal_card = Card(h=120)
@@ -157,11 +147,11 @@ class Dashboard(BoxLayout):
 
         self.add_widget(self.history_title)
 
-        # ================= HISTORY (8 ROW ONLY) =================
+        # ================= HISTORY (10 ROWS FIX) =================
         self.history_box = BoxLayout(orientation="vertical", spacing=dp(2))
 
         self.rows = []
-        for i in range(8):   # <-- FIX 8 ROW
+        for i in range(10):   # ✔ UBAH 10
             r = HistoryRow("-", "empty")
             self.rows.append(r)
             self.history_box.add_widget(r)
@@ -170,12 +160,7 @@ class Dashboard(BoxLayout):
 
         self.history = []
 
-        Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 2)
-
-    # ================= CLOCK =================
-    def update_clock(self, dt):
-        self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
 
     # ================= EXPIRED =================
     def expired(self, t):
@@ -184,7 +169,7 @@ class Dashboard(BoxLayout):
         except:
             return False
 
-    # ================= LOAD SIGNAL =================
+    # ================= LOAD =================
     def load_signal(self, dt):
         try:
             r = requests.get(DATA_URL, timeout=5)
@@ -193,7 +178,6 @@ class Dashboard(BoxLayout):
             signal = data.get("signal", "WAITING").upper()
             entry_time = data.get("entry_time", "-")
 
-            # ================= BUY =================
             if signal == "BUY":
 
                 self.signal_card.set_bg((0,0.8,0.3,1))
@@ -208,7 +192,6 @@ class Dashboard(BoxLayout):
 
                 self.add_history(f"BUY | {entry_time} | BERAKHIR", "BUY")
 
-            # ================= SELL =================
             elif signal == "SELL":
 
                 self.signal_card.set_bg((1,0.1,0.2,1))
@@ -223,7 +206,6 @@ class Dashboard(BoxLayout):
 
                 self.add_history(f"SELL | {entry_time} | BERAKHIR", "SELL")
 
-            # ================= WAITING =================
             else:
                 self.signal_card.set_bg((0.1,0.1,0.15,1))
                 self.signal_label.text = "MENUNGGU SIGNAL"
@@ -241,10 +223,10 @@ class Dashboard(BoxLayout):
         if not self.history or self.history[0]["text"] != text:
             self.history.insert(0, {"text": text, "type": t})
 
-        self.history = self.history[:8]   # <-- FIX 8 ROW
+        self.history = self.history[:10]   # ✔ UBAH 10
 
     def update_history_ui(self):
-        for i in range(8):   # <-- FIX 8 ROW
+        for i in range(10):   # ✔ UBAH 10
             if i < len(self.history):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
@@ -275,7 +257,6 @@ class AISignalApp(App):
 
         root.add_widget(scroll)
 
-        # ================= NAVBAR =================
         nav = BoxLayout(size_hint_y=None, height=dp(55))
 
         nav.add_widget(Label(text="HOME"))
