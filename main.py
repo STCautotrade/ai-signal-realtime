@@ -10,6 +10,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
+from kivy.uix.image import Image
 from kivy.graphics import Color, RoundedRectangle, Line
 
 
@@ -61,11 +62,11 @@ class HistoryRow(Card):
         bg = (0.08,0.08,0.12,1)
 
         if t == "BUY":
-            border = (0,1,0.4,1)
+            border = (0,1,0.4,0.5)
         elif t == "SELL":
-            border = (1,0.1,0.2,1)
+            border = (1,0.2,0.2,0.5)
         else:
-            border = (0.2,0.5,1,1)
+            border = (0.2,0.5,1,0.3)
 
         super().__init__(bg=bg, border=border, h=30, **kwargs)
 
@@ -87,26 +88,46 @@ class Dashboard(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
-        # ================= TITLE (ROBOT STYLE) =================
-        self.title = Label(
-            text="A I   S I G N A L   P R O",
-            font_size=dp(40),
-            bold=True,
-            color=(0.1,0.8,1,1),
+        # ================= LOGO (PNG REPLACEMENT TITLE) =================
+        logo_box = BoxLayout(
             size_hint_y=None,
-            height=dp(65)
+            height=dp(110),
+            padding=dp(10)
         )
-        self.add_widget(self.title)
 
-        # ================= MARKET + TIME =================
+        self.logo = Image(
+            source="logo.png",
+            allow_stretch=True,
+            keep_ratio=True
+        )
+
+        logo_box.add_widget(self.logo)
+        self.add_widget(logo_box)
+
+        # ================= MARKET + CLOCK =================
+        market_row = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(40),
+            spacing=dp(10)
+        )
+
         self.market = Label(
             text="MARKET : CRYPTO IDX 85%",
             font_size=dp(16),
-            bold=True,
-            size_hint_y=None,
-            height=dp(40)
+            bold=True
         )
-        self.add_widget(self.market)
+
+        self.clock = Label(
+            text="00:00:00 WIB",
+            font_size=dp(16),
+            bold=True
+        )
+
+        market_row.add_widget(self.market)
+        market_row.add_widget(self.clock)
+
+        self.add_widget(market_row)
 
         # ================= SIGNAL CARD =================
         self.signal_card = Card(h=120)
@@ -136,7 +157,7 @@ class Dashboard(BoxLayout):
 
         self.add_widget(self.signal_card)
 
-        # ================= HISTORY TITLE =================
+        # ================= HISTORY =================
         self.history_title = Label(
             text="HISTORY",
             font_size=dp(22),
@@ -144,14 +165,12 @@ class Dashboard(BoxLayout):
             size_hint_y=None,
             height=dp(40)
         )
-
         self.add_widget(self.history_title)
 
-        # ================= HISTORY (10 ROWS FIX) =================
         self.history_box = BoxLayout(orientation="vertical", spacing=dp(2))
 
         self.rows = []
-        for i in range(10):   # ✔ UBAH 10
+        for i in range(10):
             r = HistoryRow("-", "empty")
             self.rows.append(r)
             self.history_box.add_widget(r)
@@ -161,6 +180,11 @@ class Dashboard(BoxLayout):
         self.history = []
 
         Clock.schedule_interval(self.load_signal, 2)
+        Clock.schedule_interval(self.update_clock, 1)
+
+    # ================= CLOCK =================
+    def update_clock(self, dt):
+        self.clock.text = datetime.now().strftime("%H:%M:%S WIB")
 
     # ================= EXPIRED =================
     def expired(self, t):
@@ -169,7 +193,7 @@ class Dashboard(BoxLayout):
         except:
             return False
 
-    # ================= LOAD =================
+    # ================= LOAD SIGNAL =================
     def load_signal(self, dt):
         try:
             r = requests.get(DATA_URL, timeout=5)
@@ -178,6 +202,7 @@ class Dashboard(BoxLayout):
             signal = data.get("signal", "WAITING").upper()
             entry_time = data.get("entry_time", "-")
 
+            # ================= BUY =================
             if signal == "BUY":
 
                 self.signal_card.set_bg((0,0.8,0.3,1))
@@ -192,6 +217,7 @@ class Dashboard(BoxLayout):
 
                 self.add_history(f"BUY | {entry_time} | BERAKHIR", "BUY")
 
+            # ================= SELL =================
             elif signal == "SELL":
 
                 self.signal_card.set_bg((1,0.1,0.2,1))
@@ -223,18 +249,19 @@ class Dashboard(BoxLayout):
         if not self.history or self.history[0]["text"] != text:
             self.history.insert(0, {"text": text, "type": t})
 
-        self.history = self.history[:10]   # ✔ UBAH 10
+        self.history = self.history[:10]
 
     def update_history_ui(self):
-        for i in range(10):   # ✔ UBAH 10
+        for i in range(10):
             if i < len(self.history):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
 
+                # HISTORY TRANSPARAN (TIDAK IKUT SIGNAL UTAMA)
                 if h["type"] == "BUY":
-                    self.rows[i].set_bg((0,0.8,0.3,1))
+                    self.rows[i].set_bg((0, 1, 0.4, 0.15))
                 else:
-                    self.rows[i].set_bg((1,0.1,0.2,1))
+                    self.rows[i].set_bg((1, 0.2, 0.2, 0.15))
             else:
                 self.rows[i].label.text = "-"
                 self.rows[i].set_bg((0.08,0.08,0.12,1))
