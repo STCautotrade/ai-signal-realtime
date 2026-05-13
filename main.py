@@ -91,10 +91,10 @@ class Dashboard(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
-        # ================= LOGO =================
+        # ================= LOGO (BESAR) =================
         logo_box = BoxLayout(
             size_hint_y=None,
-            height=dp(110),
+            height=dp(200),   # 🔥 lebih besar dari sebelumnya
             padding=dp(10)
         )
 
@@ -107,37 +107,38 @@ class Dashboard(BoxLayout):
         logo_box.add_widget(self.logo)
         self.add_widget(logo_box)
 
-        # ================= MARKET + CLOCK (FIXED 2 COLUMN 1 ROW) =================
-        market_row = BoxLayout(
+        # ================= MARKET + CLOCK (2 KOLOM NEON) =================
+        top_row = BoxLayout(
             orientation="horizontal",
             size_hint_y=None,
-            height=dp(38),
-            spacing=dp(8),
-            padding=[dp(6), 0, dp(6), 0]
+            height=dp(50),
+            spacing=dp(8)
         )
+
+        self.market_card = Card(h=50)
+        self.clock_card = Card(h=50)
 
         self.market = Label(
             text="MARKET : CRYPTO IDX 85%",
             font_size=dp(12),
             bold=True,
-            halign="left",
-            valign="middle"
+            color=(1,1,1,1)
         )
-        self.market.bind(size=self.market.setter("text_size"))
 
         self.clock = Label(
             text="00:00:00 WIB",
             font_size=dp(12),
             bold=True,
-            halign="right",
-            valign="middle"
+            color=(1,1,1,1)
         )
-        self.clock.bind(size=self.clock.setter("text_size"))
 
-        market_row.add_widget(self.market)
-        market_row.add_widget(self.clock)
+        self.market_card.add_widget(self.market)
+        self.clock_card.add_widget(self.clock)
 
-        self.add_widget(market_row)
+        top_row.add_widget(self.market_card)
+        top_row.add_widget(self.clock_card)
+
+        self.add_widget(top_row)
 
         # ================= SIGNAL CARD =================
         self.signal_card = Card(h=120)
@@ -196,14 +197,7 @@ class Dashboard(BoxLayout):
     def update_clock(self, dt):
         self.clock.text = datetime.now().strftime("%H:%M:%S WIB")
 
-    # ================= EXPIRED =================
-    def expired(self, t):
-        try:
-            return datetime.now().strftime("%H:%M") > t
-        except:
-            return False
-
-    # ================= LOAD SIGNAL =================
+    # ================= SIGNAL =================
     def load_signal(self, dt):
         try:
             r = requests.get(DATA_URL, timeout=5)
@@ -213,31 +207,17 @@ class Dashboard(BoxLayout):
             entry_time = data.get("entry_time", "-")
 
             if signal == "BUY":
-
                 self.signal_card.set_bg((0,0.8,0.3,1))
                 self.signal_label.text = "ENTRY BUY"
-
-                if self.expired(entry_time):
-                    self.entry_text.text = "ENTRY CLOSED / EXPIRED"
-                    self.status_text.text = "MENUNGGU SIGNAL"
-                else:
-                    self.entry_text.text = f"ENTRY BUY DI JAM {entry_time}"
-                    self.status_text.text = "AI SIGNAL ACTIVE"
-
+                self.entry_text.text = f"ENTRY BUY DI JAM {entry_time}"
+                self.status_text.text = "AI SIGNAL ACTIVE"
                 self.add_history(f"BUY | {entry_time} | BERAKHIR", "BUY")
 
             elif signal == "SELL":
-
                 self.signal_card.set_bg((1,0.1,0.2,1))
                 self.signal_label.text = "ENTRY SELL"
-
-                if self.expired(entry_time):
-                    self.entry_text.text = "ENTRY CLOSED / EXPIRED"
-                    self.status_text.text = "MENUNGGU SIGNAL"
-                else:
-                    self.entry_text.text = f"ENTRY SELL DI JAM {entry_time}"
-                    self.status_text.text = "AI SIGNAL ACTIVE"
-
+                self.entry_text.text = f"ENTRY SELL DI JAM {entry_time}"
+                self.status_text.text = "AI SIGNAL ACTIVE"
                 self.add_history(f"SELL | {entry_time} | BERAKHIR", "SELL")
 
             else:
@@ -265,11 +245,10 @@ class Dashboard(BoxLayout):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
 
-                # TRANSPARAN HISTORY
                 if h["type"] == "BUY":
-                    self.rows[i].set_bg((0, 1, 0.4, 0.15))
+                    self.rows[i].set_bg((0,1,0.4,0.15))
                 else:
-                    self.rows[i].set_bg((1, 0.2, 0.2, 0.15))
+                    self.rows[i].set_bg((1,0.2,0.2,0.15))
             else:
                 self.rows[i].label.text = "-"
                 self.rows[i].set_bg((0.08,0.08,0.12,1))
@@ -284,7 +263,6 @@ class AISignalApp(App):
         webbrowser.open("https://stcbroker.id")
 
     def build(self):
-
         root = BoxLayout(orientation="vertical")
 
         scroll = ScrollView()
@@ -297,11 +275,7 @@ class AISignalApp(App):
         nav.add_widget(Label(text="HOME"))
         nav.add_widget(Label(text="HISTORY"))
 
-        btn_trade = Button(
-            text="TRADE",
-            font_size=dp(14),
-            background_color=(0.08,0.08,0.1,1)
-        )
+        btn_trade = Button(text="TRADE")
         btn_trade.bind(on_press=self.open_trade)
 
         nav.add_widget(btn_trade)
