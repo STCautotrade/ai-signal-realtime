@@ -1,51 +1,49 @@
 import requests
-import time
-import webbrowser
 from datetime import datetime
 
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.metrics import dp
-from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.graphics import Color, RoundedRectangle, Line
 from kivy.uix.scrollview import ScrollView
+from kivy.graphics import Color, RoundedRectangle, Line
 
 
 DATA_URL = "http://157.10.252.46:5000/signal"
 
-Window.clearcolor = (0.05, 0.05, 0.07, 1)
+Window.clearcolor = (0.02, 0.02, 0.05, 1)
 
 
 # =========================
-# CARD UI
+# NEON CARD
 # =========================
 class Card(BoxLayout):
-    def __init__(self, bg=(0.1,0.1,0.1,1), border=(0.3,0.3,0.3,1), radius=18, **kwargs):
+
+    def __init__(self, bg=(0.1,0.1,0.15,1), border=(0.2,0.7,1,1), h=120, **kwargs):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = dp(10)
-        self.spacing = dp(5)
+        self.padding = dp(6)
+        self.spacing = dp(3)
         self.size_hint_y = None
+        self.height = dp(h)
 
         with self.canvas.before:
             self.bg = Color(*bg)
-            self.rect = RoundedRectangle(radius=[radius])
+            self.rect = RoundedRectangle(radius=[16])
 
         with self.canvas.after:
             self.border = Color(*border)
-            self.line = Line(rounded_rectangle=(0,0,0,0,radius), width=1.2)
+            self.line = Line(rounded_rectangle=(0,0,0,0,16), width=1.3)
 
         self.bind(pos=self.update, size=self.update)
 
     def update(self, *args):
         self.rect.pos = self.pos
         self.rect.size = self.size
-        self.line.rounded_rectangle = (*self.pos, *self.size, 18)
+        self.line.rounded_rectangle = (*self.pos, *self.size, 16)
 
     def set_bg(self, c):
         self.bg.rgba = c
@@ -55,179 +53,211 @@ class Card(BoxLayout):
 # HISTORY ROW
 # =========================
 class HistoryRow(Card):
+
     def __init__(self, text, t="empty", **kwargs):
 
-        bg = (0.2,0.2,0.2,1)
-        if t == "buy":
-            bg = (0.0,0.7,0.2,1)
-        elif t == "sell":
-            bg = (0.8,0.1,0.1,1)
+        bg = (0.08,0.08,0.12,1)
 
-        super().__init__(bg=bg, height=dp(55), **kwargs)
+        if t == "BUY":
+            border = (0,1,0.4,1)
+        elif t == "SELL":
+            border = (1,0.1,0.2,1)
+        else:
+            border = (0.2,0.5,1,1)
+
+        super().__init__(bg=bg, border=border, h=35, **kwargs)
 
         self.label = Label(
             text=text,
-            font_size=dp(16),
-            bold=True
+            font_size=dp(11),
+            bold=True,
+            color=(1,1,1,1)
         )
 
         self.add_widget(self.label)
 
 
 # =========================
-# HOME SCREEN
+# DASHBOARD
 # =========================
-class HomeScreen(Screen):
+class Dashboard(BoxLayout):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        root = BoxLayout(orientation="vertical", spacing=dp(5), padding=dp(6))
+        super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
         # ================= TITLE =================
         self.title = Label(
-            text="AI SIGNAL MODE",
+            text="AI SIGNAL PRO",
             font_size=dp(42),
             bold=True,
-            color=(0.2,0.8,1,1),
+            color=(0.1,0.8,1,1),
             size_hint_y=None,
-            height=dp(70)
+            height=dp(60)
         )
-        root.add_widget(self.title)
+        self.add_widget(self.title)
 
-        # ================= MARKET + CLOCK =================
-        top = BoxLayout(size_hint_y=None, height=dp(60))
+        # ================= MARKET + TIME =================
+        top = BoxLayout(size_hint_y=None, height=dp(50))
 
-        self.market = Label(text="MARKET : -", font_size=dp(18))
-        self.clock = Label(text="00:00:00", font_size=dp(20), bold=True)
+        self.market = Label(text="MARKET : CRYPTO IDX 85%", font_size=dp(16), bold=True)
+        self.clock = Label(text="00:00:00 WIB", font_size=dp(18), bold=True)
 
         top.add_widget(self.market)
         top.add_widget(self.clock)
-        root.add_widget(top)
 
-        # ================= SIGNAL =================
+        self.add_widget(top)
+
+        # ================= SIGNAL BOX =================
+        self.signal_card = Card(h=130)
+
         self.signal = Label(
-            text="WAITING",
-            font_size=dp(34),
+            text="MENUNGGU SIGNAL",
+            font_size=dp(30),
             bold=True,
-            size_hint_y=None,
-            height=dp(70)
+            color=(1,1,1,1)
         )
 
-        self.info = Label(
-            text="-",
+        self.entry_text = Label(
+            text="ENTRY : -",
             font_size=dp(16),
+            bold=True
+        )
+
+        self.status = Label(
+            text="SYSTEM STANDBY",
+            font_size=dp(14),
+            bold=True
+        )
+
+        self.signal_card.add_widget(self.signal)
+        self.signal_card.add_widget(self.entry_text)
+        self.signal_card.add_widget(self.status)
+
+        self.add_widget(self.signal_card)
+
+        # ================= ENTRY DETAIL =================
+        self.entry_detail = Label(
+            text="",
+            font_size=dp(18),
+            bold=True,
             size_hint_y=None,
             height=dp(40)
         )
+        self.add_widget(self.entry_detail)
 
-        root.add_widget(self.signal)
-        root.add_widget(self.info)
-
-        # ================= ENTRY =================
-        self.entry = Label(
-            text="ENTRY : -",
-            font_size=dp(20),
+        # ================= HISTORY TITLE =================
+        self.history_title = Label(
+            text="HISTORY",
+            font_size=dp(22),
+            bold=True,
             size_hint_y=None,
-            height=dp(50)
+            height=dp(40)
         )
+        self.add_widget(self.history_title)
 
-        root.add_widget(self.entry)
-
-        # ================= HISTORY =================
-        self.history_box = BoxLayout(orientation="vertical")
+        # ================= HISTORY 15 ROW =================
+        self.history_box = BoxLayout(orientation="vertical", spacing=dp(2))
 
         self.rows = []
-        for i in range(8):
-            r = HistoryRow("-")
+        for i in range(15):
+            r = HistoryRow("-", "empty")
             self.rows.append(r)
             self.history_box.add_widget(r)
 
-        root.add_widget(self.history_box)
-
-        self.add_widget(root)
+        self.add_widget(self.history_box)
 
         self.history = []
 
         Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 2)
 
-    # CLOCK
+    # ================= CLOCK =================
     def update_clock(self, dt):
         self.clock.text = datetime.now().strftime("%H:%M:%S WIB")
 
-    # EXPIRED CHECK
+    # ================= EXPIRED =================
     def expired(self, t):
         try:
             return datetime.now().strftime("%H:%M") > t
         except:
             return False
 
-    # LOAD SIGNAL (SAFE)
+    # ================= LOAD SIGNAL =================
     def load_signal(self, dt):
         try:
             r = requests.get(DATA_URL, timeout=5)
-
-            if r.status_code != 200:
-                return
-
             data = r.json()
 
-            signal = data.get("signal", "WAITING")
-            market = data.get("market", "-")
+            signal = data.get("signal", "WAITING").upper()
             entry_time = data.get("entry_time", "-")
 
-            self.market.text = f"MARKET : {market}"
-
+            # ================= BUY =================
             if signal == "BUY":
-                self.signal.text = "BUY NOW"
-                self.signal.color = (0,1,0,1)
 
-                self.entry.text = (
-                    "ENTRY CLOSED" if self.expired(entry_time)
-                    else f"BUY {entry_time}"
-                )
+                self.signal_card.set_bg((0,0.8,0.3,1))
+                self.signal.text = "ENTRY BUY"
 
-                self.add_history(f"{market} | {entry_time} | BUY", "buy")
+                if self.expired(entry_time):
+                    self.entry_text.text = "ENTRY CLOSED / EXPIRED"
+                    self.status.text = "MENUNGGU SIGNAL"
+                    self.entry_detail.text = ""
+                else:
+                    self.entry_text.text = f"ENTRY BUY DI JAM {entry_time}"
+                    self.status.text = "AI SIGNAL ACTIVE"
+                    self.entry_detail.text = "BUY SIGNAL ACTIVE"
 
+                self.add_history(f"BUY | JAM {entry_time} | BERAKHIR", "BUY")
+
+            # ================= SELL =================
             elif signal == "SELL":
-                self.signal.text = "SELL NOW"
-                self.signal.color = (1,0,0,1)
 
-                self.entry.text = (
-                    "ENTRY CLOSED" if self.expired(entry_time)
-                    else f"SELL {entry_time}"
-                )
+                self.signal_card.set_bg((1,0.1,0.2,1))
+                self.signal.text = "ENTRY SELL"
 
-                self.add_history(f"{market} | {entry_time} | SELL", "sell")
+                if self.expired(entry_time):
+                    self.entry_text.text = "ENTRY CLOSED / EXPIRED"
+                    self.status.text = "MENUNGGU SIGNAL"
+                    self.entry_detail.text = ""
+                else:
+                    self.entry_text.text = f"ENTRY SELL DI JAM {entry_time}"
+                    self.status.text = "AI SIGNAL ACTIVE"
+                    self.entry_detail.text = "SELL SIGNAL ACTIVE"
+
+                self.add_history(f"SELL | JAM {entry_time} | BERAKHIR", "SELL")
 
             else:
-                self.signal.text = "WAITING"
-                self.signal.color = (1,1,1,1)
-                self.entry.text = "-"
+                self.signal_card.set_bg((0.1,0.1,0.15,1))
+                self.signal.text = "MENUNGGU SIGNAL"
+                self.entry_text.text = "ENTRY : -"
+                self.status.text = "SYSTEM STANDBY"
+                self.entry_detail.text = ""
 
             self.update_history_ui()
 
         except:
             self.signal.text = "OFFLINE"
-            self.info.text = "SERVER ERROR"
+            self.status.text = "SERVER ERROR"
 
-    # HISTORY ADD
+    # ================= HISTORY =================
     def add_history(self, text, t):
         if not self.history or self.history[0]["text"] != text:
             self.history.insert(0, {"text": text, "type": t})
-        self.history = self.history[:8]
 
-    # UPDATE HISTORY UI
+        self.history = self.history[:15]
+
     def update_history_ui(self):
-        for i in range(8):
+        for i in range(15):
             if i < len(self.history):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
-                self.rows[i].set_bg((0,0.7,0.2,1) if h["type"]=="buy" else (0.8,0.1,0.1,1))
+
+                if h["type"] == "BUY":
+                    self.rows[i].set_bg((0,0.8,0.3,1))
+                else:
+                    self.rows[i].set_bg((1,0.1,0.2,1))
             else:
                 self.rows[i].label.text = "-"
-                self.rows[i].set_bg((0.2,0.2,0.2,1))
+                self.rows[i].set_bg((0.08,0.08,0.12,1))
 
 
 # =========================
@@ -237,30 +267,19 @@ class AISignalApp(App):
 
     def build(self):
 
-        self.sm = ScreenManager()
-
-        self.home = HomeScreen(name="home")
-        self.sm.add_widget(self.home)
-
         root = BoxLayout(orientation="vertical")
 
-        root.add_widget(self.sm)
+        scroll = ScrollView()
+        scroll.add_widget(Dashboard())
+
+        root.add_widget(scroll)
 
         # ================= NAVBAR =================
-        nav = BoxLayout(size_hint_y=None, height=dp(60))
+        nav = BoxLayout(size_hint_y=None, height=dp(55))
 
-        btn_home = Button(text="HOME")
-
-        btn_profile = Button(text="PROFILE")
-
-        # PROFILE OPEN BROWSER (STABLE)
-        btn_profile.bind(
-            on_press=lambda x: webbrowser.open("https://stcbroker.id")
-        )
-
-        nav.add_widget(btn_home)
-        nav.add_widget(Button(text="HISTORY"))
-        nav.add_widget(btn_profile)
+        nav.add_widget(Label(text="HOME"))
+        nav.add_widget(Label(text="HISTORY"))
+        nav.add_widget(Label(text="TRADE"))
 
         root.add_widget(nav)
 
