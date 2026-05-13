@@ -94,10 +94,10 @@ class Home(Screen):
 
         root.add_widget(row)
 
-        # SIGNAL
+        # ================= SIGNAL =================
         self.signal = Card(h=120)
 
-        self.signal_label = Label(text="MENUNGGU SIGNAL", font_size=dp(18))
+        self.signal_label = Label(text="WAITING SIGNAL ...", font_size=dp(18))
         self.entry = Label(text="ENTRY : -", font_size=dp(12))
         self.status = Label(text="SYSTEM STANDBY", font_size=dp(10))
 
@@ -110,11 +110,8 @@ class Home(Screen):
         # HISTORY TITLE
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
-        # ================= HISTORY SCROLL (INI FIX UTAMA) =================
-        self.history_scroll = ScrollView(
-            size_hint=(1, None),
-            height=dp(220),   # BATAS BIAR TIDAK NUTUP MENU BAWAH
-        )
+        # HISTORY SCROLL
+        self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
 
         self.history_box = BoxLayout(
             orientation="vertical",
@@ -123,8 +120,8 @@ class Home(Screen):
         )
 
         self.history_box.bind(minimum_height=self.history_box.setter("height"))
-
         self.history_scroll.add_widget(self.history_box)
+
         root.add_widget(self.history_scroll)
 
         self.add_widget(root)
@@ -137,6 +134,13 @@ class Home(Screen):
     def clock_update(self, dt):
         self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
 
+    def expired(self, t):
+        try:
+            return datetime.now().strftime("%H:%M") > t
+        except:
+            return False
+
+    # ================= LOAD SIGNAL FIXED FLOW =================
     def load(self, dt):
         try:
             data = requests.get(DATA_URL, timeout=5).json()
@@ -144,44 +148,63 @@ class Home(Screen):
             signal = data.get("signal", "WAITING").upper()
             entry = data.get("entry_time", "-")
 
-            if signal == "BUY":
-                self.signal.set_bg((0,0.7,0.3,1))
-                self.signal_label.text = "BUY"
-                self.entry.text = f"BUY {entry}"
-
-            elif signal == "SELL":
-                self.signal.set_bg((0.8,0.1,0.2,1))
-                self.signal_label.text = "SELL"
-                self.entry.text = f"SELL {entry}"
-
-            else:
+            # ================= WAITING =================
+            if signal not in ["BUY", "SELL"]:
                 self.signal.set_bg((0.1,0.1,0.15,1))
-                self.signal_label.text = "WAITING"
+                self.signal_label.text = "WAITING SIGNAL ..."
                 self.entry.text = "-"
+                self.status.text = "MENUNGGU KONFIRMASI"
 
-            # ================= ADD HISTORY UNLIMITED =================
-            text = f"{signal} | {entry}"
+            # ================= BUY =================
+            elif signal == "BUY":
+                if self.expired(entry):
+                    self.signal.set_bg((0.5,0.5,0.5,1))
+                    self.signal_label.text = "BUY SIGNAL CLOSED"
+                    self.entry.text = f"ENTRY BUY DI JAM {entry} - SIGNAL BERAKHIR"
+                    self.status.text = "CLOSED"
+                    hist = f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry} BERAKHIR"
+                else:
+                    self.signal.set_bg((0,0.7,0.3,1))
+                    self.signal_label.text = "BUY NOW"
+                    self.entry.text = f"ENTRY BUY DI JAM {entry}"
+                    self.status.text = "ACTIVE"
+                    hist = f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry} ACTIVE"
 
-            if not self.history or self.history[0] != text:
-                self.history.insert(0, text)
+            # ================= SELL =================
+            else:
+                if self.expired(entry):
+                    self.signal.set_bg((0.5,0.5,0.5,1))
+                    self.signal_label.text = "SELL SIGNAL CLOSED"
+                    self.entry.text = f"ENTRY SELL DI JAM {entry} - SIGNAL BERAKHIR"
+                    self.status.text = "CLOSED"
+                    hist = f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry} BERAKHIR"
+                else:
+                    self.signal.set_bg((0.8,0.1,0.2,1))
+                    self.signal_label.text = "SELL NOW"
+                    self.entry.text = f"ENTRY SELL DI JAM {entry}"
+                    self.status.text = "ACTIVE"
+                    hist = f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry} ACTIVE"
 
-                row = HistoryRow(text)
+            # ================= HISTORY =================
+            if not self.history or self.history[0] != hist:
+                self.history.insert(0, hist)
+
+                row = HistoryRow(hist)
                 self.history_box.add_widget(row, index=0)
 
         except:
             self.signal_label.text = "OFFLINE"
+            self.status.text = "SERVER ERROR"
 
 
 # =========================
-# MARTINGALE
+# MARTINGALE (TIDAK DIUBAH)
 # =========================
 class Martingale(Screen):
-
     def __init__(self, **kw):
         super().__init__(**kw)
 
         root = BoxLayout(orientation="vertical", padding=dp(8))
-
         self.base = 14000
 
         root.add_widget(Label(text="MARTINGALE", font_size=dp(14)))
