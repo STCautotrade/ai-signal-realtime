@@ -5,256 +5,258 @@ from datetime import datetime
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.graphics import Color, RoundedRectangle, Line
+from kivy.metrics import dp
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.graphics import Color, RoundedRectangle, Line
 from kivy.uix.scrollview import ScrollView
 
+# WEBVIEW
+from kivy.garden.webview import WebView
 
-# =========================
-# VPS API
-# =========================
+
 DATA_URL = "http://157.10.252.46:5000/signal"
 
 Window.clearcolor = (0.05, 0.05, 0.07, 1)
 
 
 # =========================
-# CARD
+# CARD UI
 # =========================
 class Card(BoxLayout):
-
-    def __init__(self, bg=(0.15, 0.15, 0.18, 1), border=(0.25, 0.25, 0.3, 1), radius=18, **kwargs):
+    def __init__(self, bg=(0.1,0.1,0.1,1), border=(0.3,0.3,0.3,1), radius=20, **kwargs):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = 15
-        self.spacing = 10
-
-        # ✅ FIX RESPONSIVE HEIGHT (PENTING)
+        self.padding = dp(10)
+        self.spacing = dp(5)
         self.size_hint_y = None
 
         with self.canvas.before:
-            self.bg_color = Color(*bg)
+            self.bg = Color(*bg)
             self.rect = RoundedRectangle(radius=[radius])
 
         with self.canvas.after:
-            self.line_color = Color(*border)
-            self.line = Line(rounded_rectangle=(0, 0, 0, 0, radius), width=1.5)
+            self.border = Color(*border)
+            self.line = Line(rounded_rectangle=(0,0,0,0,radius), width=1.2)
 
-        self.bind(pos=self.update_canvas, size=self.update_canvas)
+        self.bind(pos=self.update, size=self.update)
 
-    def update_canvas(self, *args):
+    def update(self, *args):
         self.rect.pos = self.pos
         self.rect.size = self.size
+        self.line.rounded_rectangle = (*self.pos, *self.size, 20)
 
-        self.line.rounded_rectangle = (
-            self.x, self.y, self.width, self.height, 18
-        )
-
-    def set_bg(self, color):
-        self.bg_color.rgba = color
+    def set_bg(self, c):
+        self.bg.rgba = c
 
 
 # =========================
 # HISTORY ROW
 # =========================
 class HistoryRow(Card):
+    def __init__(self, text, color_type="empty", **kwargs):
 
-    def __init__(self, text="-", color_type="empty", **kwargs):
-
-        bg = (0.18, 0.18, 0.2, 1)
-
+        bg = (0.2,0.2,0.2,1)
         if color_type == "buy":
-            bg = (0.0, 0.55, 0.2, 1)
+            bg = (0.0,0.7,0.2,1)
         elif color_type == "sell":
-            bg = (0.65, 0.0, 0.0, 1)
+            bg = (0.8,0.1,0.1,1)
 
-        super().__init__(bg=bg, border=(0.3, 0.3, 0.35, 1), height=50, **kwargs)
+        super().__init__(bg=bg, height=dp(55), **kwargs)
 
         self.label = Label(
             text=text,
-            font_size=14,
-            color=(1, 1, 1, 1),
-            halign="left",
-            valign="middle"
+            font_size=dp(16),
+            bold=True
         )
 
-        self.label.bind(size=self.label.setter("text_size"))
         self.add_widget(self.label)
 
 
 # =========================
-# MAIN CONTENT
+# HOME SCREEN
 # =========================
-class Content(BoxLayout):
+class HomeScreen(Screen):
 
     def __init__(self, **kwargs):
-        super().__init__(
-            orientation="vertical",
-            spacing=8,
-            padding=8
-        )
+        super().__init__(**kwargs)
 
-        # ✅ FULL HEIGHT CONTROL (PENTING)
-        self.size_hint_y = 1
+        root = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(6))
 
-        self.history_data = []
-
-        # =========================
-        # TOP BAR (FIX HEIGHT)
-        # =========================
-        self.topbar = Card(bg=(0.08, 0.12, 0.18, 1), border=(0.1, 0.5, 1, 1), height=80)
-        self.topbar.size_hint_y = None
-
-        self.title = Label(text="AI SIGNAL PRO", font_size=30, bold=True, color=(0.1, 0.7, 1, 1))
-        self.topbar.add_widget(self.title)
-
-        self.add_widget(self.topbar)
-
-        # =========================
-        # MARKET + CLOCK
-        # =========================
-        row = BoxLayout(orientation="horizontal", size_hint_y=None, height=70, spacing=8)
-
-        self.market_card = Card(bg=(0.05, 0.12, 0.10, 1), border=(0.0, 1, 0.6, 1), height=70)
-        self.market_label = Label(text="MARKET : CRYPTO IDX", font_size=16, color=(0.1, 1, 0.7, 1))
-        self.market_card.add_widget(self.market_label)
-
-        self.clock_card = Card(bg=(0.05, 0.10, 0.15, 1), border=(0.1, 0.7, 1, 1), height=70)
-        self.clock_label = Label(text="00:00:00", font_size=18, color=(0, 1, 0.6, 1))
-        self.clock_card.add_widget(self.clock_label)
-
-        row.add_widget(self.market_card)
-        row.add_widget(self.clock_card)
-        self.add_widget(row)
-
-        # =========================
-        # SIGNAL CARD (BESAR)
-        # =========================
-        self.signal_card = Card(bg=(0.2, 0.2, 0.2, 1), border=(0.4, 0.4, 0.4, 1), height=180)
-
-        self.signal_label = Label(text="LOADING", font_size=32, bold=True)
-        self.signal_info = Label(text="WAIT SIGNAL", font_size=16)
-
-        self.signal_card.add_widget(self.signal_label)
-        self.signal_card.add_widget(self.signal_info)
-
-        self.add_widget(self.signal_card)
-
-        # =========================
-        # ENTRY
-        # =========================
-        self.entry_card = Card(bg=(0.12, 0.12, 0.15, 1), border=(0.2, 0.6, 1, 1), height=70)
-
-        self.entry_label = Label(text="ENTRY : -", font_size=18)
-        self.entry_card.add_widget(self.entry_label)
-
-        self.add_widget(self.entry_card)
-
-        # =========================
-        # HISTORY TITLE
-        # =========================
-        self.history_title = Label(
-            text="HISTORY",
+        # ================= TITLE =================
+        self.title = Label(
+            text="AI SIGNAL MODE",
+            font_size=dp(40),
+            bold=True,
+            color=(0.2,0.8,1,1),
             size_hint_y=None,
-            height=35,
-            font_size=18
+            height=dp(70)
         )
+        root.add_widget(self.title)
 
-        self.add_widget(self.history_title)
+        # ================= MARKET + CLOCK =================
+        top = BoxLayout(size_hint_y=None, height=dp(70), spacing=dp(6))
 
-        # =========================
-        # HISTORY LIST (FILL SPACE)
-        # =========================
-        self.history_box = BoxLayout(orientation="vertical", size_hint_y=None)
-        self.history_box.bind(minimum_height=self.history_box.setter("height"))
+        self.market = Label(text="MARKET : CRYPTO IDX", font_size=dp(18))
+        self.clock = Label(text="00:00:00", font_size=dp(22), bold=True)
 
-        scroll = ScrollView()
-        scroll.add_widget(self.history_box)
+        top.add_widget(self.market)
+        top.add_widget(self.clock)
+        root.add_widget(top)
 
-        # ✅ INI YANG BIKIN FULL LAYAR AMAN
-        self.add_widget(scroll)
+        # ================= SIGNAL =================
+        self.signal = Label(text="WAITING", font_size=dp(36), bold=True, size_hint_y=None, height=dp(80))
+        self.info = Label(text="-", font_size=dp(18), size_hint_y=None, height=dp(40))
 
-        self.history_rows = []
+        root.add_widget(self.signal)
+        root.add_widget(self.info)
 
-        for i in range(10):
-            row = HistoryRow()
-            self.history_rows.append(row)
-            self.history_box.add_widget(row)
+        # ================= ENTRY =================
+        self.entry = Label(text="ENTRY : -", font_size=dp(20), size_hint_y=None, height=dp(50))
+        root.add_widget(self.entry)
 
-        # =========================
-        # LOOP
-        # =========================
+        # ================= HISTORY =================
+        self.history_box = BoxLayout(orientation="vertical")
+
+        self.rows = []
+        for i in range(8):
+            r = HistoryRow("-", "empty")
+            self.rows.append(r)
+            self.history_box.add_widget(r)
+
+        root.add_widget(self.history_box)
+
+        self.add_widget(root)
+
         Clock.schedule_interval(self.update_clock, 1)
         Clock.schedule_interval(self.load_signal, 2)
 
-    # =========================
+        self.history = []
+
     # CLOCK
-    # =========================
     def update_clock(self, dt):
-        self.clock_label.text = datetime.now().strftime("%H:%M:%S")
+        self.clock.text = datetime.now().strftime("%H:%M:%S WIB")
 
-    # =========================
-    # SIGNAL
-    # =========================
-    def load_signal(self, dt):
-
+    # EXPIRED
+    def expired(self, t):
         try:
-            r = requests.get(DATA_URL + "?t=" + str(time.time()), timeout=5)
+            return datetime.now().strftime("%H:%M") > t
+        except:
+            return False
+
+    # LOAD SIGNAL
+    def load_signal(self, dt):
+        try:
+            r = requests.get(DATA_URL, timeout=5)
             data = r.json()
 
             signal = data.get("signal", "WAITING")
-            market = data.get("market", "CRYPTO IDX")
+            market = data.get("market", "-")
             entry_time = data.get("entry_time", "-")
 
-            self.market_label.text = f"MARKET : {market}"
+            self.market.text = f"MARKET : {market}"
 
-            if signal.upper() == "BUY":
-                self.signal_card.set_bg((0.0, 0.75, 0.2, 1))
-                self.signal_label.text = "BUY NOW"
+            if signal == "BUY":
+                self.signal.text = "BUY NOW"
+                self.signal.color = (0,1,0,1)
 
-            elif signal.upper() == "SELL":
-                self.signal_card.set_bg((0.75, 0.0, 0.0, 1))
-                self.signal_label.text = "SELL NOW"
+                self.entry.text = "ENTRY CLOSED" if self.expired(entry_time) else f"BUY {entry_time}"
+
+                item = f"{market} | {entry_time} | BUY"
+                self.add_history(item, "buy")
+
+            elif signal == "SELL":
+                self.signal.text = "SELL NOW"
+                self.signal.color = (1,0,0,1)
+
+                self.entry.text = "ENTRY CLOSED" if self.expired(entry_time) else f"SELL {entry_time}"
+
+                item = f"{market} | {entry_time} | SELL"
+                self.add_history(item, "sell")
+
+            else:
+                self.signal.text = "WAITING"
+                self.signal.color = (1,1,1,1)
+                self.entry.text = "-"
+
+            self.update_history_ui()
 
         except:
-            self.signal_label.text = "OFFLINE"
+            self.signal.text = "OFFLINE"
+
+    def add_history(self, text, t):
+        if not self.history or self.history[0]["text"] != text:
+            self.history.insert(0, {"text": text, "type": t})
+        self.history = self.history[:8]
+
+    def update_history_ui(self):
+        for i in range(8):
+            if i < len(self.history):
+                h = self.history[i]
+                self.rows[i].label.text = h["text"]
+                self.rows[i].set_bg((0,0.7,0.2,1) if h["type"]=="buy" else (0.8,0.1,0.1,1))
+            else:
+                self.rows[i].label.text = "-"
+                self.rows[i].set_bg((0.2,0.2,0.2,1))
 
 
 # =========================
-# APP ROOT (FULL SCREEN FIX)
+# WEB SCREEN
 # =========================
-class AISignalApp(App):
+class WebScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        layout = BoxLayout(orientation="vertical")
+
+        self.web = WebView(
+            url="https://stcbtoker.id"
+        )
+
+        layout.add_widget(self.web)
+        self.add_widget(layout)
+
+
+# =========================
+# APP
+# =========================
+class AppMain(App):
 
     def build(self):
 
+        self.sm = ScreenManager()
+
+        self.home = HomeScreen(name="home")
+        self.web = WebScreen(name="web")
+
+        self.sm.add_widget(self.home)
+        self.sm.add_widget(self.web)
+
+        # NAVBAR FIXED
         root = BoxLayout(orientation="vertical")
 
-        # ✅ CONTENT FULL HEIGHT
-        self.content = Content()
-        self.content.size_hint_y = 1
+        root.add_widget(self.sm)
 
-        # NAVBAR FIX BOTTOM
-        navbar = BoxLayout(size_hint_y=None, height=55)
+        nav = BoxLayout(size_hint_y=None, height=dp(60))
 
         btn1 = Button(text="HOME")
         btn2 = Button(text="HISTORY")
         btn3 = Button(text="PROFILE")
 
-        navbar.add_widget(btn1)
-        navbar.add_widget(btn2)
-        navbar.add_widget(btn3)
+        btn1.bind(on_press=lambda x: self.sm.switch_to(self.home))
+        btn3.bind(on_press=lambda x: self.sm.switch_to(self.web))
 
-        root.add_widget(self.content)
-        root.add_widget(navbar)
+        nav.add_widget(btn1)
+        nav.add_widget(btn2)
+        nav.add_widget(btn3)
+
+        root.add_widget(nav)
 
         return root
 
 
-# =========================
-# RUN
-# =========================
 if __name__ == "__main__":
-    AISignalApp().run()
+    AppMain().run()
