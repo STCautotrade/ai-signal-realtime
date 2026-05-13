@@ -1,11 +1,12 @@
 import requests
 import time
+import random
 from datetime import datetime
 
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.graphics import Color, RoundedRectangle, Line
+from kivy.graphics import Color, RoundedRectangle, Line, Ellipse
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -25,7 +26,11 @@ Window.clearcolor = (0.05, 0.05, 0.07, 1)
 # =========================
 class Card(BoxLayout):
 
-    def __init__(self, bg=(0.15, 0.15, 0.18, 1), border=(0.25, 0.25, 0.3, 1), **kwargs):
+    def __init__(self,
+                 bg=(0.15, 0.15, 0.18, 1),
+                 border=(0.25, 0.25, 0.3, 1),
+                 **kwargs):
+
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
@@ -34,20 +39,27 @@ class Card(BoxLayout):
         self.size_hint_y = None
 
         with self.canvas.before:
+
             self.bg_color = Color(*bg)
-            self.rect = RoundedRectangle(radius=[18])
+
+            self.rect = RoundedRectangle(
+                radius=[18]
+            )
 
         with self.canvas.after:
+
             self.line_color = Color(*border)
+
             self.line = Line(
                 rounded_rectangle=(0, 0, 0, 0, 18),
-                width=1.2
+                width=1.3
             )
 
         self.bind(pos=self.update_canvas)
         self.bind(size=self.update_canvas)
 
     def update_canvas(self, *args):
+
         self.rect.pos = self.pos
         self.rect.size = self.size
 
@@ -64,11 +76,101 @@ class Card(BoxLayout):
 
 
 # =========================
+# TECHNOLOGY ANIMATION
+# =========================
+class TechCard(Card):
+
+    def __init__(self, **kwargs):
+
+        super().__init__(
+            bg=(0.08, 0.10, 0.13, 1),
+            border=(0.1, 0.6, 1, 1),
+            height=90,
+            **kwargs
+        )
+
+        self.lines = []
+
+        with self.canvas.before:
+
+            for i in range(8):
+
+                Color(0.1, 0.8, 1, 0.8)
+
+                line = RoundedRectangle(
+                    pos=(20 + i * 40, 25),
+                    size=(30, 4),
+                    radius=[4]
+                )
+
+                self.lines.append(line)
+
+        Clock.schedule_interval(self.animate_lines, 0.25)
+
+    def animate_lines(self, dt):
+
+        for line in self.lines:
+
+            width = random.randint(20, 120)
+
+            line.size = (width, 4)
+
+
+# =========================
+# GRAPH ANIMATION
+# =========================
+class GraphCard(Card):
+
+    def __init__(self, **kwargs):
+
+        super().__init__(
+            bg=(0.08, 0.10, 0.13, 1),
+            border=(0.1, 1, 0.5, 1),
+            height=130,
+            **kwargs
+        )
+
+        self.points = []
+
+        with self.canvas.before:
+
+            Color(0, 1, 0.5, 1)
+
+            start_x = 20
+
+            for i in range(12):
+
+                y = random.randint(20, 90)
+
+                dot = Ellipse(
+                    pos=(start_x + i * 25, y),
+                    size=(6, 6)
+                )
+
+                self.points.append(dot)
+
+        Clock.schedule_interval(self.animate_graph, 0.7)
+
+    def animate_graph(self, dt):
+
+        x = 20
+
+        for dot in self.points:
+
+            y = random.randint(20, 90)
+
+            dot.pos = (x, y)
+
+            x += 25
+
+
+# =========================
 # MAIN UI
 # =========================
 class SignalUI(BoxLayout):
 
     def __init__(self, **kwargs):
+
         super().__init__(
             orientation="vertical",
             spacing=12,
@@ -111,7 +213,7 @@ class SignalUI(BoxLayout):
             height=80
         )
 
-        # MARKET CARD
+        # MARKET
         self.market_card = Card(height=80)
 
         self.market_label = Label(
@@ -123,7 +225,7 @@ class SignalUI(BoxLayout):
 
         self.market_card.add_widget(self.market_label)
 
-        # CLOCK CARD
+        # CLOCK
         self.clock_card = Card(height=80)
 
         self.clock_label = Label(
@@ -141,7 +243,7 @@ class SignalUI(BoxLayout):
         self.add_widget(row)
 
         # =========================
-        # SIGNAL CARD
+        # BIG SIGNAL CARD
         # =========================
         self.signal_card = Card(
             bg=(0.2, 0.2, 0.2, 1),
@@ -151,7 +253,7 @@ class SignalUI(BoxLayout):
 
         self.signal_label = Label(
             text="SEDANG KONFIGURASI",
-            font_size=46,
+            font_size=44,
             bold=True,
             color=(1, 1, 1, 1)
         )
@@ -182,6 +284,20 @@ class SignalUI(BoxLayout):
         self.entry_card.add_widget(self.entry_label)
 
         self.add_widget(self.entry_card)
+
+        # =========================
+        # TECHNOLOGY CARD
+        # =========================
+        self.tech_card = TechCard()
+
+        self.add_widget(self.tech_card)
+
+        # =========================
+        # GRAPH CARD
+        # =========================
+        self.graph_card = GraphCard()
+
+        self.add_widget(self.graph_card)
 
         # =========================
         # HISTORY CARD
@@ -251,6 +367,7 @@ class SignalUI(BoxLayout):
     # CLOCK
     # =========================
     def update_clock(self, dt):
+
         self.clock_label.text = datetime.now().strftime("%H:%M:%S")
 
     # =========================
@@ -337,6 +454,7 @@ class SignalUI(BoxLayout):
             history_text = "HISTORY SIGNAL\n\n"
 
             for item in self.history_data:
+
                 history_text += f"• {item}\n"
 
             self.history_label.text = history_text
