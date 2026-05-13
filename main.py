@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 import webbrowser
+import os
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -17,6 +18,8 @@ from kivy.graphics import Color, RoundedRectangle, Line
 DATA_URL = "http://157.10.252.46:5000/signal"
 
 Window.clearcolor = (0.02, 0.02, 0.05, 1)
+
+BASE_DIR = os.path.dirname(__file__)
 
 
 # =========================
@@ -88,7 +91,7 @@ class Dashboard(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(orientation="vertical", spacing=dp(4), padding=dp(6), **kwargs)
 
-        # ================= LOGO (PNG REPLACEMENT TITLE) =================
+        # ================= LOGO FIX =================
         logo_box = BoxLayout(
             size_hint_y=None,
             height=dp(110),
@@ -96,7 +99,7 @@ class Dashboard(BoxLayout):
         )
 
         self.logo = Image(
-            source="logo.png",
+            source=os.path.join(BASE_DIR, "logo.jpg"),  # 🔥 FIX GITHUB SAFE
             allow_stretch=True,
             keep_ratio=True
         )
@@ -202,7 +205,6 @@ class Dashboard(BoxLayout):
             signal = data.get("signal", "WAITING").upper()
             entry_time = data.get("entry_time", "-")
 
-            # ================= BUY =================
             if signal == "BUY":
 
                 self.signal_card.set_bg((0,0.8,0.3,1))
@@ -217,7 +219,6 @@ class Dashboard(BoxLayout):
 
                 self.add_history(f"BUY | {entry_time} | BERAKHIR", "BUY")
 
-            # ================= SELL =================
             elif signal == "SELL":
 
                 self.signal_card.set_bg((1,0.1,0.2,1))
@@ -257,7 +258,7 @@ class Dashboard(BoxLayout):
                 h = self.history[i]
                 self.rows[i].label.text = h["text"]
 
-                # HISTORY TRANSPARAN (TIDAK IKUT SIGNAL UTAMA)
+                # HISTORY TRANSPARAN
                 if h["type"] == "BUY":
                     self.rows[i].set_bg((0, 1, 0.4, 0.15))
                 else:
