@@ -106,166 +106,175 @@ class Home(Screen):
 
         root.add_widget(row)
 
+# ================= SIGNAL (FIXED ONLY PART) =================
+self.signal = Card(h=120)
 
-        # ================= SIGNAL (FIXED ONLY PART) =================
-        self.signal = Card(h=120)
+self.signal_title = Label(
+    text="SIGNAL KONFIGURASI TRADE",
+    font_size=dp(18),
+    bold=True
+)
 
-        self.signal_title = Label(
-            text="SIGNAL KONFIGURASI TRADE",
-            font_size=dp(18),
-            bold=True
-        )
+self.entry = Label(
+    text="SIGNAL EXPIRED",
+    font_size=dp(14)
+)
 
-        self.entry = Label(
-            text="SIGNAL EXPIRED",
-            font_size=dp(14)
-        )
+self.status = Label(
+    text="DETECTED",
+    font_size=dp(11)
+)
 
-        self.status = Label(
-            text="DETECTED",
-            font_size=dp(11)
-        )
+self.signal.add_widget(self.signal_title)
+self.signal.add_widget(self.entry)
+self.signal.add_widget(self.status)
 
-        self.signal.add_widget(self.signal_title)
-        self.signal.add_widget(self.entry)
-        self.signal.add_widget(self.status)
-
-        root.add_widget(self.signal)
-
-
-        # ================= EXPIRE =================
-        self.expire_card = Card(h=70, bg=(0.08,0.08,0.12,1))
-
-        self.expire_label = Label(
-            text="WAITING SIGNAL...",
-            font_size=dp(22),
-            bold=True
-        )
-
-        self.expire_card.add_widget(self.expire_label)
-        root.add_widget(self.expire_card)
+root.add_widget(self.signal)
 
 
-        # ================= HISTORY =================
-        root.add_widget(
-            Label(text="HISTORY", size_hint_y=None, height=dp(20))
-        )
+# ================= EXPIRE =================
+self.expire_card = Card(h=70, bg=(0.08,0.08,0.12,1))
 
-        self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
+self.expire_label = Label(
+    text="WAITING SIGNAL...",
+    font_size=dp(22),
+    bold=True
+)
 
-        self.history_box = BoxLayout(
-            orientation="vertical",
-            spacing=dp(2),
-            size_hint_y=None
-        )
+self.expire_card.add_widget(self.expire_label)
+root.add_widget(self.expire_card)
 
-        self.history_box.bind(minimum_height=self.history_box.setter("height"))
 
-        self.history_scroll.add_widget(self.history_box)
-        root.add_widget(self.history_scroll)
+# ================= HISTORY =================
+root.add_widget(
+    Label(text="HISTORY", size_hint_y=None, height=dp(20))
+)
 
-        self.add_widget(root)
+self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
 
-        # ================= VAR =================
-        self.history = []
+self.history_box = BoxLayout(
+    orientation="vertical",
+    spacing=dp(2),
+    size_hint_y=None
+)
+
+self.history_box.bind(minimum_height=self.history_box.setter("height"))
+
+self.history_scroll.add_widget(self.history_box)
+root.add_widget(self.history_scroll)
+
+self.add_widget(root)
+
+
+# ================= VAR =================
+self.history = []
+self.expiry_time = None
+self.last_signal = ""
+
+
+Clock.schedule_interval(self.load, 2)
+Clock.schedule_interval(self.clock_update, 1)
+Clock.schedule_interval(self.update_expiry, 1)
+
+
+# ================= CLOCK =================
+def clock_update(self, dt):
+    self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
+
+
+# ================= EXPIRY =================
+def update_expiry(self, dt):
+
+    if not self.expiry_time:
+        self.expire_label.text = "MENUNGGU SIGNAL BERIKUTNYA"
+        return
+
+    remaining = int((self.expiry_time - datetime.now()).total_seconds())
+
+    if remaining < 0:
+        remaining = 0
+
+    self.expire_label.text = f"EXPIRED : {remaining} DETIK"
+
+    if remaining == 0:
         self.expiry_time = None
-        self.last_signal = ""
 
-        Clock.schedule_interval(self.load, 2)
-        Clock.schedule_interval(self.clock_update, 1)
-        Clock.schedule_interval(self.update_expiry, 1)
 
-    # ================= CLOCK =================
-    def clock_update(self, dt):
-        self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
+# ================= LOAD SIGNAL (FIXED FLOW) =================
+def load(self, dt):
 
-    # ================= EXPIRY =================
-    def update_expiry(self, dt):
+    try:
+        data = requests.get(DATA_URL, timeout=5).json()
 
-        if not self.expiry_time:
-            self.expire_label.text = "MENUNGGU SIGNAL BERIKUTNYA"
-            return
+        signal = data.get("signal", "WAITING").upper()
+        entry = data.get("entry_time")
 
-        remaining = int((self.expiry_time - datetime.now()).total_seconds())
+        signal_key = None
 
-        if remaining < 0:
-            remaining = 0
+        # ================= BUY =================
+        if signal == "BUY" and entry:
 
-        self.expire_label.text = f"EXPIRED : {remaining} DETIK"
+            self.signal.set_bg((0, 0.8, 0.3, 1))
+            self.entry.text = f"ENTRY BUY DI JAM {entry}"
+            self.status.text = "ACTIVE"
 
-        if remaining == 0:
+            signal_key = f"BUY_{entry}"
+
+        # ================= SELL =================
+        elif signal == "SELL" and entry:
+
+            self.signal.set_bg((1, 0.1, 0.2, 1))
+            self.entry.text = f"ENTRY SELL DI JAM {entry}"
+            self.status.text = "ACTIVE"
+
+            signal_key = f"SELL_{entry}"
+
+        # ================= WAITING / INVALID =================
+        else:
+
+            self.signal.set_bg((0.1, 0.1, 0.15, 1))
+            self.entry.text = "SIGNAL EXPIRED"
+            self.status.text = "DETECTED"
+
             self.expiry_time = None
+            self.last_signal = ""
+            signal_key = None
 
-    # ================= LOAD SIGNAL (ONLY FIX HERE) =================
-    def load(self, dt):
+        # ================= EXPIRY SET (ONLY VALID SIGNAL) =================
+        if signal_key and signal_key != self.last_signal:
 
-        try:
-            data = requests.get(DATA_URL, timeout=5).json()
+            try:
+                h, m = map(int, entry.split(":"))
 
-            signal = data.get("signal", "WAITING").upper()
-            entry = data.get("entry_time", "-")
-
-            signal_key = ""
-
-            # ================= BUY =================
-            if signal == "BUY":
-
-                self.signal.set_bg((0, 0.8, 0.3, 1))
-                self.entry.text = f"ENTRY BUY DI JAM {entry}"
-                self.status.text = "ACTIVE"
-
-                signal_key = "BUY" + entry
-
-            # ================= SELL =================
-            elif signal == "SELL":
-
-                self.signal.set_bg((1, 0.1, 0.2, 1))
-                self.entry.text = f"ENTRY SELL DI JAM {entry}"
-                self.status.text = "ACTIVE"
-
-                signal_key = "SELL" + entry
-
-            # ================= WAITING / EXPIRED =================
-            else:
-
-                self.signal.set_bg((0.1, 0.1, 0.15, 1))
-                self.entry.text = "SIGNAL EXPIRED"
-                self.status.text = "DETECTED"
-
-                self.expiry_time = None
-                signal_key = ""
-
-            # ================= EXPIRY SET =================
-            if signal_key and signal_key != self.last_signal:
-
-                try:
-                    h, m = map(int, entry.split(":"))
-
-                    self.expiry_time = datetime.now().replace(
-                        hour=h, minute=m, second=0
-                    ) + timedelta(minutes=1)
-
-                except:
-                    self.expiry_time = datetime.now() + timedelta(seconds=60)
-
-                self.last_signal = signal_key
-
-            # ================= HISTORY =================
-            hist = f"{signal} | JAM {entry}"
-
-            if hist and (not self.history or self.history[0] != hist):
-
-                self.history.insert(0, hist)
-
-                self.history_box.add_widget(
-                    HistoryRow(hist),
-                    index=0
+                base_time = datetime.now().replace(
+                    hour=h,
+                    minute=m,
+                    second=0
                 )
 
-        except:
+                self.expiry_time = base_time + timedelta(minutes=1)
 
-            self.entry.text = "OFFLINE"
-            self.status.text = "SERVER ERROR"
+            except:
+                self.expiry_time = datetime.now() + timedelta(seconds=60)
+
+            self.last_signal = signal_key
+
+        # ================= HISTORY (STABLE) =================
+        hist = f"{signal} | JAM {entry if entry else '-'}"
+
+        if not self.history or self.history[0] != hist:
+
+            self.history.insert(0, hist)
+
+            self.history_box.add_widget(
+                HistoryRow(hist),
+                index=0
+            )
+
+    except:
+
+        self.entry.text = "OFFLINE"
+        self.status.text = "SERVER ERROR"
 
 
 # =========================
