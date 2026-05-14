@@ -21,8 +21,9 @@ BASE_DIR=os.path.dirname(__file__)
 
 
 # =========================
-# CARD NEON
+# CARD
 # =========================
+
 class Card(BoxLayout):
 
     def __init__(
@@ -38,6 +39,7 @@ class Card(BoxLayout):
         self.orientation="vertical"
         self.padding=dp(8)
         self.spacing=dp(4)
+
         self.size_hint_y=None
         self.height=dp(h)
 
@@ -54,9 +56,7 @@ class Card(BoxLayout):
             self.border=Color(*border)
 
             self.line=Line(
-                rounded_rectangle=(
-                    0,0,0,0,18
-                ),
+                rounded_rectangle=(0,0,0,0,18),
                 width=1.8
             )
 
@@ -64,6 +64,7 @@ class Card(BoxLayout):
             pos=self.update,
             size=self.update
         )
+
 
     def update(self,*args):
 
@@ -76,6 +77,7 @@ class Card(BoxLayout):
             18
         )
 
+
     def set_bg(self,c):
         self.bg.rgba=c
 
@@ -83,28 +85,46 @@ class Card(BoxLayout):
 # =========================
 # HISTORY
 # =========================
+
 class HistoryRow(Card):
 
     def __init__(self,text):
 
         super().__init__(
-            h=30,
+            h=60,
             bg=(0.08,0.08,0.12,1)
         )
 
         self.label=Label(
             text=text,
-            font_size=dp(9)
+            font_size=dp(10),
+            halign="left",
+            valign="middle",
+            text_size=(dp(300),None)
+        )
+
+        self.label.bind(
+            texture_size=self.resize
         )
 
         self.add_widget(
             self.label
         )
 
+    def resize(self,*args):
+
+        h=max(
+            dp(60),
+            self.label.texture_size[1]+dp(20)
+        )
+
+        self.height=h
+
 
 # =========================
 # HOME
 # =========================
+
 class Home(Screen):
 
     def __init__(self,**kw):
@@ -119,6 +139,7 @@ class Home(Screen):
             padding=dp(6)
         )
 
+
         root.add_widget(
             Image(
                 source=os.path.join(
@@ -129,6 +150,7 @@ class Home(Screen):
                 height=dp(140)
             )
         )
+
 
         row=BoxLayout(
             size_hint_y=None,
@@ -162,7 +184,7 @@ class Home(Screen):
 
         root.add_widget(row)
 
-        # BAHASA
+
         lang_row=BoxLayout(
             size_hint_y=None,
             height=dp(40),
@@ -191,9 +213,8 @@ class Home(Screen):
         lang_row.add_widget(btn_en)
         lang_row.add_widget(btn_es)
 
-        root.add_widget(
-            lang_row
-        )
+        root.add_widget(lang_row)
+
 
         self.signal=Card(h=120)
 
@@ -212,13 +233,22 @@ class Home(Screen):
             font_size=dp(10)
         )
 
-        self.signal.add_widget(self.signal_label)
-        self.signal.add_widget(self.entry)
-        self.signal.add_widget(self.status)
+        self.signal.add_widget(
+            self.signal_label
+        )
+
+        self.signal.add_widget(
+            self.entry
+        )
+
+        self.signal.add_widget(
+            self.status
+        )
 
         root.add_widget(
             self.signal
         )
+
 
         self.expire_card=Card(
             h=70
@@ -238,6 +268,7 @@ class Home(Screen):
             self.expire_card
         )
 
+
         root.add_widget(
             Label(
                 text="HISTORY",
@@ -246,6 +277,7 @@ class Home(Screen):
             )
         )
 
+
         self.history_scroll=ScrollView(
             size_hint=(1,None),
             height=dp(220)
@@ -253,7 +285,7 @@ class Home(Screen):
 
         self.history_box=BoxLayout(
             orientation="vertical",
-            spacing=dp(2),
+            spacing=dp(4),
             size_hint_y=None
         )
 
@@ -293,9 +325,11 @@ class Home(Screen):
             1
         )
 
+
     def set_lang(self,lang):
 
         self.lang=lang
+
 
     def clock_update(self,dt):
 
@@ -307,15 +341,19 @@ class Home(Screen):
             )
         )
 
-def expired(self,t):
+
+    def expired(self,t):
 
         try:
-            return (
+
+            return(
                 datetime.now().strftime(
                     "%H:%M"
                 )>t
             )
+
         except:
+
             return False
 
 
@@ -330,6 +368,7 @@ def expired(self,t):
         return "ESPERANDO SIGUIENTE SEÑAL"
 
 
+
     def signal_text(self):
 
         if self.lang=="id":
@@ -341,7 +380,6 @@ def expired(self,t):
         return "ESPERANDO SEÑAL..."
 
 
-    # COUNTDOWN
     def update_expiry(self,dt):
 
         if not self.expiry_time:
@@ -352,30 +390,29 @@ def expired(self,t):
 
             return
 
+
         remaining=int(
             (
-                self.expiry_time-
-                datetime.now()
+            self.expiry_time-
+            datetime.now()
             ).total_seconds()
         )
 
         if remaining<0:
             remaining=0
 
+
         self.expire_label.text=(
             f"EXPIRED : {remaining:02d} DETIK"
         )
 
-        if remaining==0:
 
-            self.expire_label.text=(
-                self.waiting_text()
-            )
+        if remaining==0:
 
             self.expiry_time=None
 
 
-    # LOAD
+
     def load(self,dt):
 
         try:
@@ -395,34 +432,17 @@ def expired(self,t):
                 "-"
             )
 
-            if signal not in ["BUY","SELL"]:
+
+            hist=None
+
+
+            if signal=="BUY":
 
                 self.signal.set_bg(
-                    (0.03,0.05,0.09,1)
+                    (0,0.7,0.3,1)
                 )
 
-                self.signal_label.text=(
-                    self.signal_text()
-                )
-
-                self.entry.text="-"
-
-                self.status.text=(
-                    "MENUNGGU KONFIRMASI"
-                )
-
-                hist=None
-
-
-            elif signal=="BUY":
-
-                self.signal.set_bg(
-                    (0,0.6,0.3,1)
-                )
-
-                self.signal_label.text=(
-                    "BUY NOW"
-                )
+                self.signal_label.text="BUY NOW"
 
                 self.entry.text=(
                     f"ENTRY BUY DI JAM {entry}"
@@ -441,20 +461,19 @@ def expired(self,t):
 
                     self.last_signal=signal_key
 
+
                 hist=(
                     f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry}"
                 )
 
 
-            else:
+            elif signal=="SELL":
 
                 self.signal.set_bg(
-                    (0.8,0.1,0.2,1)
+                    (0.9,0.2,0.2,1)
                 )
 
-                self.signal_label.text=(
-                    "SELL NOW"
-                )
+                self.signal_label.text="SELL NOW"
 
                 self.entry.text=(
                     f"ENTRY SELL DI JAM {entry}"
@@ -473,8 +492,26 @@ def expired(self,t):
 
                     self.last_signal=signal_key
 
+
                 hist=(
                     f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry}"
+                )
+
+
+            else:
+
+                self.signal.set_bg(
+                    (0.03,0.05,0.09,1)
+                )
+
+                self.signal_label.text=(
+                    self.signal_text()
+                )
+
+                self.entry.text="-"
+
+                self.status.text=(
+                    "MENUNGGU KONFIRMASI"
                 )
 
 
@@ -488,7 +525,9 @@ def expired(self,t):
                     hist
                 )
 
+
                 row=HistoryRow(hist)
+
 
                 if "BUY" in hist:
 
@@ -502,25 +541,29 @@ def expired(self,t):
                         (1,0.2,0.2,0.2)
                     )
 
+
                 self.history_box.add_widget(
                     row,
                     index=0
                 )
 
+
+                if len(
+                    self.history_box.children
+                )>20:
+
+                    self.history_box.remove_widget(
+                        self.history_box.children[-1]
+                    )
+
+
         except:
 
-            self.signal_label.text=(
-                "OFFLINE"
-            )
-
-            self.status.text=(
-                "SERVER ERROR"
-            )
+            self.signal_label.text="OFFLINE"
+            self.status.text="SERVER ERROR"
 
 
-# =========================
-# MARTINGALE SCROLL
-# =========================
+
 class Martingale(Screen):
 
     def __init__(self,**kw):
@@ -528,159 +571,39 @@ class Martingale(Screen):
         super().__init__(**kw)
 
         root=BoxLayout(
-            orientation="vertical",
-            padding=dp(8),
-            spacing=dp(6)
+            orientation="vertical"
         )
 
-        title=Card(h=60)
-
-        title.add_widget(
+        root.add_widget(
             Label(
-                text="MARTINGALE SYSTEM",
-                font_size=dp(18),
-                bold=True
+                text="MARTINGALE"
             )
         )
-
-        root.add_widget(title)
-
-        btn=Button(
-            text="HITUNG",
-            size_hint_y=None,
-            height=dp(45),
-            background_normal="",
-            background_color=(
-                0,0.7,1,0.8
-            )
-        )
-
-        btn.bind(
-            on_press=self.calc
-        )
-
-        root.add_widget(btn)
-
-        scroll=ScrollView()
-
-        self.result_box=Card(
-            h=1200
-        )
-
-        self.result=Label(
-            text="Klik HITUNG",
-            font_size=dp(12),
-            halign="left",
-            valign="top",
-            text_size=(dp(300),None),
-            size_hint_y=None
-        )
-
-        self.result.bind(
-            texture_size=self.resize
-        )
-
-        self.result_box.add_widget(
-            self.result
-        )
-
-        scroll.add_widget(
-            self.result_box
-        )
-
-        root.add_widget(scroll)
-
-        self.base=14000
 
         self.add_widget(root)
 
-    def resize(self,*args):
-
-        self.result.height=(
-            self.result.texture_size[1]
-            +dp(50)
-        )
-
-        self.result_box.height=(
-            self.result.height
-            +dp(40)
-        )
-
-    def calc(self,instance):
-
-        mults=[2,2.5,3,4]
-
-        out=""
-
-        for m in mults:
-
-            val=self.base
-
-            out+=f"\n==== X{m} ====\n"
-
-            for i in range(1,11):
-
-                val*=m
-
-                out+=(
-                    f"K{i}: {int(val)}\n"
-                )
-
-        self.result.text=out
 
 
 class AppMain(App):
+
 
     def build(self):
 
         sm=ScreenManager()
 
-        home=Home(name="home")
-        mart=Martingale(name="mart")
+        home=Home(
+            name="home"
+        )
+
+        mart=Martingale(
+            name="mart"
+        )
 
         sm.add_widget(home)
         sm.add_widget(mart)
 
-        root=BoxLayout(
-            orientation="vertical"
-        )
+        return sm
 
-        root.add_widget(sm)
-
-        nav=BoxLayout(
-            size_hint_y=None,
-            height=dp(50)
-        )
-
-        nav.add_widget(
-            Button(
-                text="HOME",
-                on_press=lambda x:
-                sm.switch_to(home)
-            )
-        )
-
-        nav.add_widget(
-            Button(
-                text="MART",
-                on_press=lambda x:
-                sm.switch_to(mart)
-            )
-        )
-
-        nav.add_widget(
-            Button(
-                text="TRADE",
-                on_press=lambda x:
-                webbrowser.open(
-                    "https://stcbroker.id"
-                )
-            )
-        )
-
-        root.add_widget(nav)
-
-        return root
 
 
 if __name__=="__main__":
