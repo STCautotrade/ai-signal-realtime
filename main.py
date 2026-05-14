@@ -174,23 +174,37 @@ class Home(Screen):
 
         # SIGNAL
 
-        self.signal=Card(h=120)
+        self.signal=Card(
+    h=120
+)
 
-        self.signal_label=Label(
-            text="WAITING SIGNAL...",
-            font_size=dp(18)
-        )
+self.signal_title=Label(
+    text="SIGNAL TRADE KONFIGURASI",
+    font_size=dp(18),
+    bold=True
+)
 
-        self.entry=Label(
-            text="ENTRY : -",
-            font_size=dp(12)
-        )
+self.entry=Label(
+    text="SIGNAL EXPIRED",
+    font_size=dp(14)
+)
 
-        self.status=Label(
-            text="SYSTEM STANDBY",
-            font_size=dp(10)
-        )
+self.status=Label(
+    text="DETECTED",
+    font_size=dp(11)
+)
 
+self.signal.add_widget(
+    self.signal_title
+)
+
+self.signal.add_widget(
+    self.entry
+)
+
+self.signal.add_widget(
+    self.status
+)
 
         self.signal.add_widget(
             self.signal_label
@@ -366,24 +380,45 @@ class Home(Screen):
 
             if signal=="BUY":
 
-                self.signal.set_bg(
-                    (0,0.7,0.3,1)
-                )
+    self.signal.set_bg(
+        (0,0.7,0.3,1)
+    )
 
-                self.signal_label.text=(
-                    "BUY NOW"
-                )
+    self.entry.text=(
+        "ENTRY BUY"
+    )
 
-                self.entry.text=(
-                    f"ENTRY BUY DI JAM {entry}"
-                )
+    self.status.text=(
+        "ACTIVE"
+    )
 
-                self.status.text=(
-                    "ACTIVE"
-                )
+elif signal=="SELL":
 
+    self.signal.set_bg(
+        (0.8,0.1,0.2,1)
+    )
 
-                signal_key=signal+entry
+    self.entry.text=(
+        "ENTRY SELL"
+    )
+
+    self.status.text=(
+        "ACTIVE"
+    )
+
+else:
+
+    self.signal.set_bg(
+        (0.1,0.1,0.15,1)
+    )
+
+    self.entry.text=(
+        "SIGNAL EXPIRED"
+    )
+
+    self.status.text=(
+        "DETECTED"
+)
 
 
                 if signal_key!=self.last_signal:
