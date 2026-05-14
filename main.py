@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 import webbrowser
 import os
+import time
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -15,19 +16,22 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Color, RoundedRectangle, Line
 
 
-DATA_URL = "http://157.10.252.46:5000/signal"
-BASE_DIR = os.path.dirname(__file__)
+DATA_URL="http://157.10.252.46:5000/signal"
+BASE_DIR=os.path.dirname(__file__)
 
 
 # =========================
 # CARD NEON
 # =========================
 class Card(BoxLayout):
-    def __init__(self,
-                 bg=(0.03,0.05,0.09,1),
-                 border=(0,1,1,1),
-                 h=90,
-                 **kwargs):
+
+    def __init__(
+        self,
+        bg=(0.03,0.05,0.09,1),
+        border=(0,1,1,1),
+        h=90,
+        **kwargs
+    ):
 
         super().__init__(**kwargs)
 
@@ -38,14 +42,21 @@ class Card(BoxLayout):
         self.height=dp(h)
 
         with self.canvas.before:
+
             self.bg=Color(*bg)
-            self.rect=RoundedRectangle(radius=[18])
+
+            self.rect=RoundedRectangle(
+                radius=[18]
+            )
 
         with self.canvas.after:
+
             self.border=Color(*border)
 
             self.line=Line(
-                rounded_rectangle=(0,0,0,0,18),
+                rounded_rectangle=(
+                    0,0,0,0,18
+                ),
                 width=1.8
             )
 
@@ -86,7 +97,9 @@ class HistoryRow(Card):
             font_size=dp(9)
         )
 
-        self.add_widget(self.label)
+        self.add_widget(
+            self.label
+        )
 
 
 # =========================
@@ -97,6 +110,8 @@ class Home(Screen):
     def __init__(self,**kw):
 
         super().__init__(**kw)
+
+        self.lang="id"
 
         root=BoxLayout(
             orientation="vertical",
@@ -130,7 +145,7 @@ class Home(Screen):
         )
 
         self.clock_label=Label(
-            text="00:00:00 WIB",
+            text="00:00:00",
             font_size=dp(11)
         )
 
@@ -147,6 +162,39 @@ class Home(Screen):
 
         root.add_widget(row)
 
+        # BAHASA
+        lang_row=BoxLayout(
+            size_hint_y=None,
+            height=dp(40),
+            spacing=dp(4)
+        )
+
+        btn_id=Button(
+            text="Indonesia",
+            on_press=lambda x:
+            self.set_lang("id")
+        )
+
+        btn_en=Button(
+            text="English",
+            on_press=lambda x:
+            self.set_lang("en")
+        )
+
+        btn_es=Button(
+            text="Español",
+            on_press=lambda x:
+            self.set_lang("es")
+        )
+
+        lang_row.add_widget(btn_id)
+        lang_row.add_widget(btn_en)
+        lang_row.add_widget(btn_es)
+
+        root.add_widget(
+            lang_row
+        )
+
         self.signal=Card(h=120)
 
         self.signal_label=Label(
@@ -155,7 +203,7 @@ class Home(Screen):
         )
 
         self.entry=Label(
-            text="ENTRY : -",
+            text="ENTRY:-",
             font_size=dp(12)
         )
 
@@ -168,14 +216,16 @@ class Home(Screen):
         self.signal.add_widget(self.entry)
         self.signal.add_widget(self.status)
 
-        root.add_widget(self.signal)
+        root.add_widget(
+            self.signal
+        )
 
         self.expire_card=Card(
             h=70
         )
 
         self.expire_label=Label(
-            text="WAITING SIGNAL...",
+            text="WAITING SIGNAL",
             font_size=dp(20),
             bold=True
         )
@@ -243,14 +293,21 @@ class Home(Screen):
             1
         )
 
+    def set_lang(self,lang):
+
+        self.lang=lang
+
     def clock_update(self,dt):
+
+        zona=time.tzname[0]
 
         self.clock_label.text=(
             datetime.now().strftime(
-                "%H:%M:%S WIB"
+                f"%H:%M:%S {zona}"
             )
-                     )
-        def expired(self,t):
+        )
+
+def expired(self,t):
 
         try:
             return (
@@ -258,18 +315,39 @@ class Home(Screen):
                     "%H:%M"
                 )>t
             )
-
         except:
             return False
 
 
-    # COUNTDOWN SIGNAL
+    def waiting_text(self):
+
+        if self.lang=="id":
+            return "MENUNGGU SIGNAL BERIKUTNYA"
+
+        elif self.lang=="en":
+            return "WAITING NEXT SIGNAL"
+
+        return "ESPERANDO SIGUIENTE SEÑAL"
+
+
+    def signal_text(self):
+
+        if self.lang=="id":
+            return "MENUNGGU SIGNAL..."
+
+        elif self.lang=="en":
+            return "WAITING SIGNAL..."
+
+        return "ESPERANDO SEÑAL..."
+
+
+    # COUNTDOWN
     def update_expiry(self,dt):
 
         if not self.expiry_time:
 
             self.expire_label.text=(
-                "MENUNGGU SIGNAL BERIKUTNYA"
+                self.waiting_text()
             )
 
             return
@@ -291,13 +369,13 @@ class Home(Screen):
         if remaining==0:
 
             self.expire_label.text=(
-                "MENUNGGU SIGNAL BERIKUTNYA"
+                self.waiting_text()
             )
 
             self.expiry_time=None
 
 
-    # LOAD SIGNAL
+    # LOAD
     def load(self,dt):
 
         try:
@@ -324,7 +402,7 @@ class Home(Screen):
                 )
 
                 self.signal_label.text=(
-                    "WAITING SIGNAL..."
+                    self.signal_text()
                 )
 
                 self.entry.text="-"
@@ -334,6 +412,7 @@ class Home(Screen):
                 )
 
                 hist=None
+
 
             elif signal=="BUY":
 
@@ -366,6 +445,7 @@ class Home(Screen):
                     f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry}"
                 )
 
+
             else:
 
                 self.signal.set_bg(
@@ -396,6 +476,7 @@ class Home(Screen):
                 hist=(
                     f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry}"
                 )
+
 
             if hist and (
                 not self.history
@@ -535,9 +616,7 @@ class Martingale(Screen):
 
             val=self.base
 
-            out+=(
-                f"\n==== X{m} ====\n"
-            )
+            out+=f"\n==== X{m} ====\n"
 
             for i in range(1,11):
 
