@@ -56,15 +56,6 @@ class Card(BoxLayout):
 
 
 # =========================
-# HISTORY ROW
-# =========================
-class HistoryRow(Card):
-    def __init__(self, text):
-        super().__init__(h=35, bg=(0.08,0.08,0.12,1))
-        self.add_widget(Label(text=text, font_size=dp(12)))
-
-
-# =========================
 # HOME SCREEN
 # =========================
 class Home(Screen):
@@ -72,9 +63,9 @@ class Home(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
 
-        root = BoxLayout(orientation="vertical", padding=0, spacing=0)
+        root = BoxLayout(orientation="vertical")
 
-        # JUDUL PNG FULL ATAS
+        # HEADER IMAGE
         root.add_widget(
             Image(
                 source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
@@ -85,7 +76,7 @@ class Home(Screen):
             )
         )
 
-        # CRYPTO + CLOCK
+        # TOP
         top = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(3))
 
         self.market = Card(h=40)
@@ -102,7 +93,7 @@ class Home(Screen):
 
         root.add_widget(top)
 
-        # SIGNAL BOX
+        # SIGNAL
         self.signal = Card(h=120)
 
         self.signal_title = Label(text="SIGNAL KONFIGURASI TRADE", font_size=dp(16), bold=True)
@@ -115,19 +106,26 @@ class Home(Screen):
 
         root.add_widget(self.signal)
 
-        # EXPIRE
+        # EXPIRY
         self.expire_label = Label(text="MENUNGGU SIGNAL", size_hint_y=None, height=dp(30))
         root.add_widget(self.expire_label)
 
-        # HISTORY FULL SCROLL
+        # HISTORY TITLE
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
+        # ===== HISTORY 7 KOLOM HEADER =====
+        header = BoxLayout(size_hint_y=None, height=dp(25), spacing=dp(2))
+        for t in ["SIGNAL","ENTRY","STATUS","K1","K2","K3","K4"]:
+            header.add_widget(Label(text=t, font_size=dp(10)))
+        root.add_widget(header)
+
+        # ===== HISTORY TABLE =====
         self.history_scroll = ScrollView()
 
         self.history_box = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            spacing=dp(3)
+            spacing=dp(2)
         )
 
         self.history_box.bind(minimum_height=self.history_box.setter("height"))
@@ -154,7 +152,7 @@ class Home(Screen):
 
         if mode == "ACTIVE":
             self.signal.set_bg((0, 0.8, 0.3, 1) if signal == "BUY" else (1, 0.1, 0.2, 1))
-            self.signal_main.text = f"ENTRY {signal} DI JAM {entry} ~ ACTIVE"
+            self.signal_main.text = f"ENTRY {signal} {entry}"
             self.signal_status.text = "ACTIVE"
 
         elif mode == "EXPIRED":
@@ -164,29 +162,26 @@ class Home(Screen):
 
         else:
             self.signal.set_bg((0.1, 0.1, 0.15, 1))
-            self.signal_main.text = "AKTIVE ~ WAITING...."
+            self.signal_main.text = "WAITING...."
             self.signal_status.text = "DETECTED"
 
     def update_expiry(self, dt):
 
-    if not self.expiry_time:
-        self.expire_label.text = "MENUNGGU SIGNAL"
-        return
+        if not self.expiry_time:
+            self.expire_label.text = "MENUNGGU SIGNAL"
+            return
 
-    remaining = int((self.expiry_time - datetime.now()).total_seconds())
+        remaining = int((self.expiry_time - datetime.now()).total_seconds())
 
-    if remaining <= 0:
-        self.expiry_time = None
-        self.state = "WAIT"
-        self.set_signal("EXPIRED")
-        self.expire_label.text = "EXPIRED : 0 DETIK"
-        return
+        if remaining <= 0:
+            self.expiry_time = None
+            self.state = "WAIT"
+            self.set_signal("EXPIRED")
+            self.expire_label.text = "EXPIRED : 0 DETIK"
+            return
 
-    self.expire_label.text = f"EXPIRED : {remaining} DETIK"
-    
-    # =========================
-    # FIXED LOAD LOGIC
-    # =========================
+        self.expire_label.text = f"EXPIRED : {remaining} DETIK"
+
     def load(self, dt):
 
         try:
@@ -199,7 +194,6 @@ class Home(Screen):
 
                 key = f"{signal}_{entry}"
 
-                # SIGNAL BARU SELALU BISA ACTIVE
                 if key != self.last_signal:
 
                     self.state = "ACTIVE"
@@ -219,11 +213,17 @@ class Home(Screen):
                 self.set_signal("WAIT")
                 self.expiry_time = None
 
-            hist = f"{signal} | {entry if entry else '-'}"
+            # ===== HISTORY 7 KOLOM ROW =====
+            row = BoxLayout(size_hint_y=None, height=dp(20), spacing=dp(2))
 
-            if not self.history or self.history[0] != hist:
-                self.history.insert(0, hist)
-                self.history_box.add_widget(HistoryRow(hist), index=0)
+            row.add_widget(Label(text=signal, font_size=dp(10)))
+            row.add_widget(Label(text=str(entry)))
+            row.add_widget(Label(text="ACTIVE"))
+
+            for _ in range(4):
+                row.add_widget(Label(text="-"))
+
+            self.history_box.add_widget(row)
 
         except:
             self.set_signal("WAIT")
@@ -231,7 +231,7 @@ class Home(Screen):
 
 
 # =========================
-# MARTINGALE (FULL SCREEN FIX)
+# MARTINGALE SCREEN
 # =========================
 class Martingale(Screen):
 
@@ -240,150 +240,31 @@ class Martingale(Screen):
 
         self.row_state = {}
 
-        root = BoxLayout(orientation="vertical", padding=0, spacing=5)
+        root = BoxLayout(orientation="vertical")
 
         self.header = Card(h=60)
-        self.header_label = Label(text="SIGNAL VIP STC | -", font_size=dp(18), bold=True)
+        self.header_label = Label(text="SIGNAL VIP STC", font_size=dp(18), bold=True)
         self.header.add_widget(self.header_label)
         root.add_widget(self.header)
 
-        # INPUT
-        self.input_box = BoxLayout(orientation="vertical", spacing=5)
+        self.input = TextInput(hint_text="Paste SIGNAL", size_hint_y=None, height=dp(100))
+        self.enter_btn = Button(text="ENTER", size_hint_y=None, height=dp(50))
 
-        self.input = TextInput(
-            hint_text="Paste SIGNAL VIP",
-            size_hint_y=None,
-            height=dp(120),
-            font_size=dp(18)
-        )
-
-        self.enter_btn = Button(text="ENTER", size_hint_y=None, height=dp(60))
-        self.enter_btn.bind(on_press=self.parse)
-
-        self.input_box.add_widget(self.input)
-        self.input_box.add_widget(self.enter_btn)
-
-        root.add_widget(self.input_box)
-
-        # LIST MODE
-        self.list_container = BoxLayout(orientation="vertical")
+        root.add_widget(self.input)
+        root.add_widget(self.enter_btn)
 
         self.scroll = ScrollView()
 
         self.list_box = BoxLayout(
             orientation="vertical",
-            size_hint_y=None,
-            spacing=5
+            size_hint_y=None
         )
-
         self.list_box.bind(minimum_height=self.list_box.setter("height"))
 
         self.scroll.add_widget(self.list_box)
-
-        self.clear_btn = Button(text="HAPUS ALL", size_hint_y=None, height=dp(60))
-        self.clear_btn.bind(on_press=self.reset_all)
-
-        self.list_container.add_widget(self.scroll)
-        self.list_container.add_widget(self.clear_btn)
-
-        root.add_widget(self.list_container)
-
-        self.list_container.opacity = 0
-        self.list_container.disabled = True
+        root.add_widget(self.scroll)
 
         self.add_widget(root)
-
-    def reset_all(self, instance):
-
-        self.list_box.clear_widgets()
-        self.row_state = {}
-
-        self.list_container.opacity = 0
-        self.list_container.disabled = True
-
-        self.input_box.opacity = 1
-        self.input_box.disabled = False
-
-    def parse(self, instance):
-
-        txt = self.input.text.upper()
-        self.input.text = ""
-
-        self.list_box.clear_widgets()
-
-        now = datetime.now()
-        self.header_label.text = f"SIGNAL VIP STC | {now.strftime('%d %b %Y')}"
-
-        data = re.findall(r'(\d{1,2}:\d{2})\s*([BS])', txt)
-
-        for i, (jam, arah) in enumerate(data):
-
-            row_id = f"{jam}-{i}"
-            self.row_state[row_id] = "ON"
-
-            row = Card(h=60)
-            line = BoxLayout(spacing=10, padding=10)
-
-            line.add_widget(Label(text=jam, font_size=dp(24)))
-            line.add_widget(Label(text=arah, font_size=dp(24)))
-
-            btn = Button(text="ON", font_size=dp(18))
-
-            def cycle(b, rid=row_id):
-
-    state = self.row_state[rid]
-
-    if state == "ON":
-        self.row_state[rid] = "K1"
-        b.text = "K1"
-        b.background_color = (0.2, 0.6, 1, 1)
-
-    elif state == "K1":
-        self.row_state[rid] = "K2"
-        b.text = "K2"
-        b.background_color = (0.2, 0.5, 1, 1)
-
-    elif state == "K2":
-        self.row_state[rid] = "K3"
-        b.text = "K3"
-        b.background_color = (0.3, 0.3, 1, 1)
-
-    elif state == "K3":
-        self.row_state[rid] = "K4"
-        b.text = "K4"
-        b.background_color = (0.5, 0.2, 1, 1)
-
-    elif state == "K4":
-        self.row_state[rid] = "K5"
-        b.text = "K5"
-        b.background_color = (0.7, 0.2, 0.8, 1)
-
-    elif state == "K5":
-        self.row_state[rid] = "WIN"
-        b.text = "WIN"
-        b.background_color = (0, 1, 0, 1)
-
-    elif state == "WIN":
-        self.row_state[rid] = "LOSS"
-        b.text = "LOSS"
-        b.background_color = (1, 0, 0, 1)
-
-    else:
-        self.row_state[rid] = "ON"
-        b.text = "ON"
-        b.background_color = (1, 1, 1, 1)
-        
-            btn.bind(on_press=cycle)
-
-            line.add_widget(btn)
-            row.add_widget(line)
-            self.list_box.add_widget(row)
-
-        self.input_box.opacity = 0
-        self.input_box.disabled = True
-
-        self.list_container.opacity = 1
-        self.list_container.disabled = False
 
 
 # =========================
@@ -394,7 +275,6 @@ class AppMain(App):
     def build(self):
 
         sm = ScreenManager()
-
         sm.add_widget(Home(name="home"))
         sm.add_widget(Martingale(name="mart"))
 
@@ -413,4 +293,4 @@ class AppMain(App):
 
 
 if __name__ == "__main__":
-    AppMain().run()
+    AppMain().run().
