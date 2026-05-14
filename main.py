@@ -168,7 +168,6 @@ class Home(Screen):
                     self.signal_label.text = "BUY NOW"
                     self.entry.text = f"ENTRY BUY DI JAM {entry}"
                     self.status.text = "ACTIVE"
-                    hist = f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry} BERAKHIR"
 
             # ================= SELL =================
             else:
@@ -183,7 +182,6 @@ class Home(Screen):
                     self.signal_label.text = "SELL NOW"
                     self.entry.text = f"ENTRY SELL DI JAM {entry}"
                     self.status.text = "ACTIVE"
-                    hist = f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry} BERAKHIR"
 
             # ================= HISTORY =================
             if not self.history or self.history[0] != hist:
