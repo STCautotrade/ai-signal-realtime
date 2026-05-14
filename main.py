@@ -169,21 +169,21 @@ class Home(Screen):
 
     def update_expiry(self, dt):
 
-        if not self.expiry_time:
-            self.expire_label.text = "MENUNGGU SIGNAL"
-            return
+    if not self.expiry_time:
+        self.expire_label.text = "MENUNGGU SIGNAL"
+        return
 
-        remaining = int((self.expiry_time - datetime.now()).total_seconds())
+    remaining = int((self.expiry_time - datetime.now()).total_seconds())
 
-        if remaining <= 0:
-            self.expiry_time = None
-            self.state = "WAIT"
-            self.set_signal("EXPIRED")
-            self.expire_label.text = "EXPIRED : 0 DETIK"
-            return
+    if remaining <= 0:
+        self.expiry_time = None
+        self.state = "WAIT"
+        self.set_signal("EXPIRED")
+        self.expire_label.text = "EXPIRED : 0 DETIK"
+        return
 
-        self.expire_label.text = f"EXPIRED : {remaining} DETIK"
-
+    self.expire_label.text = f"EXPIRED : {remaining} DETIK"
+    
     # =========================
     # FIXED LOAD LOGIC
     # =========================
@@ -331,22 +331,48 @@ class Martingale(Screen):
 
             def cycle(b, rid=row_id):
 
-                state = self.row_state[rid]
+    state = self.row_state[rid]
 
-                if state == "ON":
-                    self.row_state[rid] = "WIN"
-                    b.text = "WIN"
-                    b.background_color = (0, 1, 0, 1)
+    if state == "ON":
+        self.row_state[rid] = "K1"
+        b.text = "K1"
+        b.background_color = (0.2, 0.6, 1, 1)
 
-                elif state == "WIN":
-                    self.row_state[rid] = "LOSS"
-                    b.text = "LOSS"
-                    b.background_color = (1, 0, 0, 1)
+    elif state == "K1":
+        self.row_state[rid] = "K2"
+        b.text = "K2"
+        b.background_color = (0.2, 0.5, 1, 1)
 
-                else:
-                    self.row_state[rid] = "ON"
-                    b.text = "ON"
+    elif state == "K2":
+        self.row_state[rid] = "K3"
+        b.text = "K3"
+        b.background_color = (0.3, 0.3, 1, 1)
 
+    elif state == "K3":
+        self.row_state[rid] = "K4"
+        b.text = "K4"
+        b.background_color = (0.5, 0.2, 1, 1)
+
+    elif state == "K4":
+        self.row_state[rid] = "K5"
+        b.text = "K5"
+        b.background_color = (0.7, 0.2, 0.8, 1)
+
+    elif state == "K5":
+        self.row_state[rid] = "WIN"
+        b.text = "WIN"
+        b.background_color = (0, 1, 0, 1)
+
+    elif state == "WIN":
+        self.row_state[rid] = "LOSS"
+        b.text = "LOSS"
+        b.background_color = (1, 0, 0, 1)
+
+    else:
+        self.row_state[rid] = "ON"
+        b.text = "ON"
+        b.background_color = (1, 1, 1, 1)
+        
             btn.bind(on_press=cycle)
 
             line.add_widget(btn)
