@@ -542,37 +542,106 @@ class Martingale(Screen):
 
         root=BoxLayout(
             orientation="vertical",
-            padding=dp(8)
+            padding=dp(8),
+            spacing=dp(6)
         )
 
-        self.base=14000
 
-        root.add_widget(
+        title=Card(
+            h=60,
+            bg=(0.03,0.05,0.09,1),
+            border=(0,1,1,1)
+        )
+
+        title.add_widget(
             Label(
-                text="MARTINGALE",
-                font_size=dp(14)
+                text="MARTINGALE SYSTEM",
+                font_size=dp(18),
+                bold=True
             )
         )
 
-        self.result=Label(
-            font_size=dp(10)
+        root.add_widget(
+            title
         )
 
 
         btn=Button(
             text="HITUNG",
             size_hint_y=None,
-            height=dp(40)
+            height=dp(45),
+            background_normal="",
+            background_color=(0,0.7,1,0.8)
         )
 
         btn.bind(
             on_press=self.calc
         )
 
-        root.add_widget(btn)
-        root.add_widget(self.result)
+        root.add_widget(
+            btn
+        )
 
-        self.add_widget(root)
+
+        scroll=ScrollView()
+
+
+        self.result_box=Card(
+            h=1000,
+            bg=(0.03,0.05,0.09,1),
+            border=(0,1,1,1)
+        )
+
+
+        self.result=Label(
+            text="Klik HITUNG",
+            font_size=dp(12),
+            halign="left",
+            valign="top",
+            text_size=(dp(300),None),
+            size_hint_y=None
+        )
+
+
+        self.result.bind(
+            texture_size=self.resize
+        )
+
+
+        self.result_box.add_widget(
+            self.result
+        )
+
+
+        scroll.add_widget(
+            self.result_box
+        )
+
+
+        root.add_widget(
+            scroll
+        )
+
+
+        self.base=14000
+
+        self.add_widget(
+            root
+        )
+
+
+    def resize(self,*args):
+
+        self.result.height=(
+            self.result.texture_size[1]
+            +dp(50)
+        )
+
+
+        self.result_box.height=(
+            self.result.height
+            +dp(40)
+        )
 
 
     def calc(self,instance):
@@ -585,13 +654,21 @@ class Martingale(Screen):
 
             val=self.base
 
-            out+=f"\nX{m}\n"
+            out+=(
+                f"\n===== X{m} =====\n"
+            )
 
-            for i in range(1,11):
+            for i in range(
+                1,
+                11
+            ):
 
                 val*=m
 
-                out+=f"K{i}: {int(val)}\n"
+                out+=(
+                    f"K{i}: {int(val):,}\n"
+                )
+
 
         self.result.text=out
 
