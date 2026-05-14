@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import webbrowser
 import os
 
@@ -76,6 +76,7 @@ class Home(Screen):
             height=dp(140)
         ))
 
+        # ================= ROW MARKET & CLOCK =================
         row = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(5))
 
         self.market = Card(h=50)
@@ -92,6 +93,7 @@ class Home(Screen):
 
         root.add_widget(row)
 
+        # ================= SIGNAL CARD =================
         self.signal = Card(h=120)
 
         self.signal_label = Label(text="WAITING SIGNAL ...", font_size=dp(18))
@@ -104,6 +106,14 @@ class Home(Screen):
 
         root.add_widget(self.signal)
 
+        # ================= NEW: EXPIRED / COUNTDOWN CARD =================
+        self.expire_card = Card(h=60, bg=(0.08,0.08,0.12,1))
+        self.expire_label = Label(text="WAITING SIGNAL ...", font_size=dp(12))
+
+        self.expire_card.add_widget(self.expire_label)
+        root.add_widget(self.expire_card)
+
+        # ================= HISTORY =================
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
         self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
@@ -121,10 +131,18 @@ class Home(Screen):
 
         self.add_widget(root)
 
+        # ================= STATE =================
         self.history = []
 
+        self.expiry_time = None
+        self.marquee_x = 0
+        self.marquee_direction = -2
+
+        # ================= CLOCK =================
         Clock.schedule_interval(self.load, 2)
         Clock.schedule_interval(self.clock_update, 1)
+        Clock.schedule_interval(self.update_expiry, 1)
+        Clock.schedule_interval(self.marquee, 0.03)
 
     def clock_update(self, dt):
         self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
@@ -135,7 +153,28 @@ class Home(Screen):
         except:
             return False
 
-    # ================= LOAD SIGNAL FIXED FLOW =================
+    # ================= MARQUEE ANIMATION =================
+    def marquee(self, dt):
+        if not self.expire_label:
+            return
+
+        self.expire_label.x += self.marquee_direction
+
+        if self.expire_label.x < -self.expire_label.width:
+            self.expire_label.x = self.width
+
+    # ================= COUNTDOWN =================
+    def update_expiry(self, dt):
+        if self.expiry_time:
+            remaining = int((self.expiry_time - datetime.now()).total_seconds())
+
+            if remaining > 0:
+                self.expire_label.text = f"EXPIRED IN : {remaining} DETIK"
+            else:
+                self.expire_label.text = "MENUNGGU SIGNAL BERIKUTNYA"
+                self.expiry_time = None
+
+    # ================= LOAD SIGNAL =================
     def load(self, dt):
         try:
             data = requests.get(DATA_URL, timeout=5).json()
@@ -149,6 +188,7 @@ class Home(Screen):
                 self.entry.text = "-"
                 self.status.text = "MENUNGGU KONFIRMASI"
                 hist = None
+                self.expire_label.text = "WAITING SIGNAL ..."
 
             elif signal == "BUY":
                 if self.expired(entry):
@@ -161,6 +201,7 @@ class Home(Screen):
                     self.signal_label.text = "BUY NOW"
                     self.entry.text = f"ENTRY BUY DI JAM {entry}"
                     self.status.text = "ACTIVE"
+                    self.expiry_time = datetime.now() + timedelta(seconds=60)
 
                 hist = f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry} BERAKHIR"
 
@@ -175,20 +216,20 @@ class Home(Screen):
                     self.signal_label.text = "SELL NOW"
                     self.entry.text = f"ENTRY SELL DI JAM {entry}"
                     self.status.text = "ACTIVE"
+                    self.expiry_time = datetime.now() + timedelta(seconds=60)
 
                 hist = f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry} BERAKHIR"
 
-            # ================= HISTORY (ONLY CHANGE HERE) =================
+            # ================= HISTORY =================
             if hist and (not self.history or self.history[0] != hist):
                 self.history.insert(0, hist)
 
                 row = HistoryRow(hist)
 
-                # ONLY ADD COLOR (NO OTHER CHANGE)
                 if "BUY" in hist:
-                    row.set_bg((0, 1, 0.4, 0.15))   # green transparent
+                    row.set_bg((0, 1, 0.4, 0.15))
                 else:
-                    row.set_bg((1, 0.2, 0.2, 0.15)) # red transparent
+                    row.set_bg((1, 0.2, 0.2, 0.15))
 
                 self.history_box.add_widget(row, index=0)
 
@@ -198,7 +239,7 @@ class Home(Screen):
 
 
 # =========================
-# MARTINGALE (TIDAK DIUBAH)
+# MARTINGALE
 # =========================
 class Martingale(Screen):
     def __init__(self, **kw):
