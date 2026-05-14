@@ -56,7 +56,7 @@ class Card(BoxLayout):
 
 
 # =========================
-# HISTORY ROW
+# HISTORY
 # =========================
 class HistoryRow(Card):
     def __init__(self, text):
@@ -65,7 +65,7 @@ class HistoryRow(Card):
 
 
 # =========================
-# HOME SCREEN
+# HOME SCREEN (FIXED STATE)
 # =========================
 class Home(Screen):
 
@@ -74,7 +74,6 @@ class Home(Screen):
 
         root = BoxLayout(orientation="vertical", padding=dp(6), spacing=dp(5))
 
-        # 1. JUDUL PNG
         root.add_widget(
             Image(
                 source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
@@ -83,7 +82,6 @@ class Home(Screen):
             )
         )
 
-        # 2. CRYPTO + CLOCK
         top = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(5))
 
         self.market = Card(h=45)
@@ -100,7 +98,7 @@ class Home(Screen):
 
         root.add_widget(top)
 
-        # 3. SIGNAL CARD
+        # SIGNAL
         self.signal = Card(h=140)
 
         self.signal_title = Label(text="SIGNAL KONFIGURASI TRADE", font_size=dp(16), bold=True)
@@ -113,42 +111,33 @@ class Home(Screen):
 
         root.add_widget(self.signal)
 
-        # 4. EXPIRE
+        # EXPIRE
         self.expire_label = Label(text="MENUNGGU SIGNAL", size_hint_y=None, height=dp(40))
         root.add_widget(self.expire_label)
 
-        # 5. HISTORY
+        # HISTORY
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
         self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
-
-        self.history_box = BoxLayout(
-            orientation="vertical",
-            size_hint_y=None,
-            spacing=dp(2)
-        )
-
+        self.history_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(2))
         self.history_box.bind(minimum_height=self.history_box.setter("height"))
-
         self.history_scroll.add_widget(self.history_box)
         root.add_widget(self.history_scroll)
 
         self.add_widget(root)
 
-        # VAR
         self.history = []
         self.expiry_time = None
         self.last_signal = ""
+        self.state = "WAIT"
 
         Clock.schedule_interval(self.load, 2)
         Clock.schedule_interval(self.clock_update, 1)
         Clock.schedule_interval(self.update_expiry, 1)
 
-    # CLOCK
     def clock_update(self, dt):
         self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
 
-    # UI ENGINE
     def set_signal(self, mode, signal="", entry=""):
 
         if mode == "ACTIVE":
@@ -156,17 +145,16 @@ class Home(Screen):
             self.signal_main.text = f"ENTRY {signal} DI JAM {entry} ~ ACTIVE"
             self.signal_status.text = "ACTIVE"
 
-        elif mode == "WAIT":
-            self.signal.set_bg((0.1, 0.1, 0.15, 1))
-            self.signal_main.text = "WAITING...."
+        elif mode == "EXPIRED":
+            self.signal.set_bg((0.2, 0.2, 0.2, 1))
+            self.signal_main.text = "SIGNAL EXPIRED ~ ENTRY LOCKED"
             self.signal_status.text = "DETECTED"
 
         else:
             self.signal.set_bg((0.1, 0.1, 0.15, 1))
-            self.signal_main.text = "SIGNAL EXPIRED"
+            self.signal_main.text = "AKTIVE ~ WAITING...."
             self.signal_status.text = "DETECTED"
 
-    # EXPIRE
     def update_expiry(self, dt):
 
         if not self.expiry_time:
@@ -177,13 +165,13 @@ class Home(Screen):
 
         if remaining <= 0:
             self.expiry_time = None
+            self.state = "EXPIRED"
             self.set_signal("EXPIRED")
             self.expire_label.text = "EXPIRED : 0 DETIK"
             return
 
         self.expire_label.text = f"EXPIRED : {remaining} DETIK"
 
-    # LOAD API
     def load(self, dt):
 
         try:
@@ -194,24 +182,30 @@ class Home(Screen):
 
             if signal in ["BUY", "SELL"] and entry:
 
-                self.set_signal("ACTIVE", signal, entry)
+                if self.state != "EXPIRED":
 
-                key = f"{signal}_{entry}"
+                    self.state = "ACTIVE"
+                    self.set_signal("ACTIVE", signal, entry)
 
-                if key != self.last_signal:
+                    key = f"{signal}_{entry}"
 
-                    try:
-                        h, m = map(int, entry.split(":"))
-                        base = datetime.now().replace(hour=h, minute=m, second=0)
-                        self.expiry_time = base + timedelta(minutes=1)
-                    except:
-                        self.expiry_time = datetime.now() + timedelta(seconds=60)
+                    if key != self.last_signal:
 
-                    self.last_signal = key
+                        try:
+                            h, m = map(int, entry.split(":"))
+                            base = datetime.now().replace(hour=h, minute=m, second=0)
+                            self.expiry_time = base + timedelta(minutes=1)
+                        except:
+                            self.expiry_time = datetime.now() + timedelta(seconds=60)
+
+                        self.last_signal = key
 
             else:
-                self.set_signal("WAIT")
-                self.expiry_time = None
+
+                if self.state != "EXPIRED":
+                    self.state = "WAIT"
+                    self.set_signal("WAIT")
+                    self.expiry_time = None
 
             hist = f"{signal} | {entry if entry else '-'}"
 
@@ -225,7 +219,7 @@ class Home(Screen):
 
 
 # =========================
-# MARTINGALE
+# MARTINGALE (FULL FIX UI)
 # =========================
 class Martingale(Screen):
 
@@ -233,12 +227,12 @@ class Martingale(Screen):
         super().__init__(**kw)
 
         self.row_state = {}
-        self.list_mode = False
 
         root = BoxLayout(orientation="vertical", padding=dp(6), spacing=dp(6))
 
+        # HEADER
         self.header = Card(h=60)
-        self.header_label = Label(text="SIGNAL VIP STC | -", font_size=dp(14), bold=True)
+        self.header_label = Label(text="SIGNAL VIP STC | -", font_size=dp(18), bold=True)
         self.header.add_widget(self.header_label)
         root.add_widget(self.header)
 
@@ -248,10 +242,17 @@ class Martingale(Screen):
         self.input = TextInput(
             hint_text="Paste SIGNAL VIP di sini...",
             size_hint_y=None,
-            height=dp(120)
+            height=dp(120),
+            font_size=dp(18)
         )
 
-        self.enter_btn = Button(text="ENTER", size_hint_y=None, height=dp(50))
+        self.enter_btn = Button(
+            text="ENTER",
+            size_hint_y=None,
+            height=dp(60),
+            font_size=dp(20)
+        )
+
         self.enter_btn.bind(on_press=self.parse)
 
         self.input_box.add_widget(self.input)
@@ -259,18 +260,31 @@ class Martingale(Screen):
 
         root.add_widget(self.input_box)
 
-        # LIST MODE
-        self.list_container = BoxLayout(orientation="vertical", spacing=dp(5))
+        # LIST MODE FULL SCREEN
+        self.list_container = BoxLayout(orientation="vertical", spacing=dp(6))
+
         self.scroll = ScrollView()
-        self.list_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
+
+        self.list_box = BoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            spacing=dp(6)
+        )
+
         self.list_box.bind(minimum_height=self.list_box.setter("height"))
 
         self.scroll.add_widget(self.list_box)
-        self.list_container.add_widget(self.scroll)
 
-        self.clear_btn = Button(text="HAPUS ALL", size_hint_y=None, height=dp(50))
+        self.clear_btn = Button(
+            text="HAPUS ALL",
+            size_hint_y=None,
+            height=dp(60),
+            font_size=dp(20)
+        )
+
         self.clear_btn.bind(on_press=self.reset_all)
 
+        self.list_container.add_widget(self.scroll)
         self.list_container.add_widget(self.clear_btn)
 
         root.add_widget(self.list_container)
@@ -284,7 +298,6 @@ class Martingale(Screen):
 
         self.list_box.clear_widgets()
         self.row_state = {}
-        self.list_mode = False
 
         self.list_container.opacity = 0
         self.list_container.disabled = True
@@ -309,13 +322,13 @@ class Martingale(Screen):
             row_id = f"{jam}-{i}"
             self.row_state[row_id] = "ON"
 
-            row = Card(h=40)
-            line = BoxLayout(spacing=dp(5), padding=dp(5))
+            row = Card(h=60)
+            line = BoxLayout(spacing=dp(10), padding=dp(10))
 
-            line.add_widget(Label(text=jam, size_hint_x=.3))
-            line.add_widget(Label(text=arah, size_hint_x=.15))
+            line.add_widget(Label(text=jam, font_size=dp(22), size_hint_x=.4))
+            line.add_widget(Label(text=arah, font_size=dp(22), size_hint_x=.2))
 
-            btn = Button(text="ON", size_hint_x=.4)
+            btn = Button(text="ON", font_size=dp(18), size_hint_x=.4)
 
             def cycle(b, rid=row_id):
 
@@ -342,8 +355,6 @@ class Martingale(Screen):
             row.add_widget(line)
             self.list_box.add_widget(row)
 
-        self.list_mode = True
-
         self.input_box.opacity = 0
         self.input_box.disabled = True
 
@@ -360,19 +371,16 @@ class AppMain(App):
 
         sm = ScreenManager()
 
-        home = Home(name="home")
-        mart = Martingale(name="mart")
-
-        sm.add_widget(home)
-        sm.add_widget(mart)
+        sm.add_widget(Home(name="home"))
+        sm.add_widget(Martingale(name="mart"))
 
         root = BoxLayout(orientation="vertical")
         root.add_widget(sm)
 
         nav = BoxLayout(size_hint_y=None, height=dp(50))
 
-        nav.add_widget(Button(text="HOME", on_press=lambda x: sm.switch_to(home)))
-        nav.add_widget(Button(text="MART", on_press=lambda x: sm.switch_to(mart)))
+        nav.add_widget(Button(text="HOME", on_press=lambda x: sm.switch_to(sm.get_screen("home"))))
+        nav.add_widget(Button(text="MART", on_press=lambda x: sm.switch_to(sm.get_screen("mart"))))
         nav.add_widget(Button(text="TRADE", on_press=lambda x: webbrowser.open("https://stcbroker.id")))
 
         root.add_widget(nav)
