@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 import webbrowser
 import os
+import re
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -12,7 +13,6 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.textinput import TextInput
-import re
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Color, RoundedRectangle, Line
 
@@ -49,7 +49,6 @@ class Card(BoxLayout):
     def update(self, *args):
         self.rect.pos = self.pos
         self.rect.size = self.size
-
         self.line.rounded_rectangle = (*self.pos, *self.size, 14)
 
     def set_bg(self, c):
@@ -63,7 +62,6 @@ class HistoryRow(Card):
 
     def __init__(self, text):
         super().__init__(h=30, bg=(0.08,0.08,0.12,1))
-
         self.label = Label(text=text, font_size=dp(9))
         self.add_widget(self.label)
 
@@ -106,179 +104,158 @@ class Home(Screen):
 
         root.add_widget(row)
 
-# ================= SIGNAL (FIXED ONLY PART) =================
-self.signal = Card(h=120)
+        # ================= SIGNAL =================
+        self.signal = Card(h=120)
 
-self.signal_title = Label(
-    text="SIGNAL KONFIGURASI TRADE",
-    font_size=dp(18),
-    bold=True
-)
+        self.signal_title = Label(
+            text="SIGNAL KONFIGURASI TRADE",
+            font_size=dp(18),
+            bold=True
+        )
 
-self.entry = Label(
-    text="SIGNAL EXPIRED",
-    font_size=dp(14)
-)
+        self.entry = Label(
+            text="SIGNAL EXPIRED",
+            font_size=dp(14)
+        )
 
-self.status = Label(
-    text="DETECTED",
-    font_size=dp(11)
-)
+        self.status = Label(
+            text="DETECTED",
+            font_size=dp(11)
+        )
 
-self.signal.add_widget(self.signal_title)
-self.signal.add_widget(self.entry)
-self.signal.add_widget(self.status)
+        self.signal.add_widget(self.signal_title)
+        self.signal.add_widget(self.entry)
+        self.signal.add_widget(self.status)
 
-root.add_widget(self.signal)
+        root.add_widget(self.signal)
 
+        # ================= EXPIRE =================
+        self.expire_card = Card(h=70, bg=(0.08,0.08,0.12,1))
 
-# ================= EXPIRE =================
-self.expire_card = Card(h=70, bg=(0.08,0.08,0.12,1))
+        self.expire_label = Label(
+            text="WAITING SIGNAL...",
+            font_size=dp(22),
+            bold=True
+        )
 
-self.expire_label = Label(
-    text="WAITING SIGNAL...",
-    font_size=dp(22),
-    bold=True
-)
+        self.expire_card.add_widget(self.expire_label)
+        root.add_widget(self.expire_card)
 
-self.expire_card.add_widget(self.expire_label)
-root.add_widget(self.expire_card)
+        # ================= HISTORY =================
+        root.add_widget(
+            Label(text="HISTORY", size_hint_y=None, height=dp(20))
+        )
 
+        self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
 
-# ================= HISTORY =================
-root.add_widget(
-    Label(text="HISTORY", size_hint_y=None, height=dp(20))
-)
+        self.history_box = BoxLayout(
+            orientation="vertical",
+            spacing=dp(2),
+            size_hint_y=None
+        )
 
-self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
+        self.history_box.bind(minimum_height=self.history_box.setter("height"))
 
-self.history_box = BoxLayout(
-    orientation="vertical",
-    spacing=dp(2),
-    size_hint_y=None
-)
+        self.history_scroll.add_widget(self.history_box)
+        root.add_widget(self.history_scroll)
 
-self.history_box.bind(minimum_height=self.history_box.setter("height"))
+        self.add_widget(root)
 
-self.history_scroll.add_widget(self.history_box)
-root.add_widget(self.history_scroll)
-
-self.add_widget(root)
-
-
-# ================= VAR =================
-self.history = []
-self.expiry_time = None
-self.last_signal = ""
-
-
-Clock.schedule_interval(self.load, 2)
-Clock.schedule_interval(self.clock_update, 1)
-Clock.schedule_interval(self.update_expiry, 1)
-
-
-# ================= CLOCK =================
-def clock_update(self, dt):
-    self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
-
-
-# ================= EXPIRY =================
-def update_expiry(self, dt):
-
-    if not self.expiry_time:
-        self.expire_label.text = "MENUNGGU SIGNAL BERIKUTNYA"
-        return
-
-    remaining = int((self.expiry_time - datetime.now()).total_seconds())
-
-    if remaining < 0:
-        remaining = 0
-
-    self.expire_label.text = f"EXPIRED : {remaining} DETIK"
-
-    if remaining == 0:
+        # ================= VAR =================
+        self.history = []
         self.expiry_time = None
+        self.last_signal = ""
 
+        Clock.schedule_interval(self.load, 2)
+        Clock.schedule_interval(self.clock_update, 1)
+        Clock.schedule_interval(self.update_expiry, 1)
 
-# ================= LOAD SIGNAL (FIXED FLOW) =================
-def load(self, dt):
+    # ================= CLOCK =================
+    def clock_update(self, dt):
+        self.clock_label.text = datetime.now().strftime("%H:%M:%S WIB")
 
-    try:
-        data = requests.get(DATA_URL, timeout=5).json()
+    # ================= EXPIRY =================
+    def update_expiry(self, dt):
 
-        signal = data.get("signal", "WAITING").upper()
-        entry = data.get("entry_time")
+        if not self.expiry_time:
+            self.expire_label.text = "MENUNGGU SIGNAL BERIKUTNYA"
+            return
 
-        signal_key = None
+        remaining = int((self.expiry_time - datetime.now()).total_seconds())
 
-        # ================= BUY =================
-        if signal == "BUY" and entry:
+        if remaining < 0:
+            remaining = 0
 
-            self.signal.set_bg((0, 0.8, 0.3, 1))
-            self.entry.text = f"ENTRY BUY DI JAM {entry}"
-            self.status.text = "ACTIVE"
+        self.expire_label.text = f"EXPIRED : {remaining} DETIK"
 
-            signal_key = f"BUY_{entry}"
-
-        # ================= SELL =================
-        elif signal == "SELL" and entry:
-
-            self.signal.set_bg((1, 0.1, 0.2, 1))
-            self.entry.text = f"ENTRY SELL DI JAM {entry}"
-            self.status.text = "ACTIVE"
-
-            signal_key = f"SELL_{entry}"
-
-        # ================= WAITING / INVALID =================
-        else:
-
-            self.signal.set_bg((0.1, 0.1, 0.15, 1))
-            self.entry.text = "SIGNAL EXPIRED"
-            self.status.text = "DETECTED"
-
+        if remaining == 0:
             self.expiry_time = None
-            self.last_signal = ""
+
+    # ================= LOAD =================
+    def load(self, dt):
+
+        try:
+            data = requests.get(DATA_URL, timeout=5).json()
+
+            signal = data.get("signal", "WAITING").upper()
+            entry = data.get("entry_time")
+
             signal_key = None
 
-        # ================= EXPIRY SET (ONLY VALID SIGNAL) =================
-        if signal_key and signal_key != self.last_signal:
+            if signal == "BUY" and entry:
 
-            try:
-                h, m = map(int, entry.split(":"))
+                self.signal.set_bg((0, 0.8, 0.3, 1))
+                self.entry.text = f"ENTRY BUY DI JAM {entry}"
+                self.status.text = "ACTIVE"
+                signal_key = f"BUY_{entry}"
 
-                base_time = datetime.now().replace(
-                    hour=h,
-                    minute=m,
-                    second=0
-                )
+            elif signal == "SELL" and entry:
 
-                self.expiry_time = base_time + timedelta(minutes=1)
+                self.signal.set_bg((1, 0.1, 0.2, 1))
+                self.entry.text = f"ENTRY SELL DI JAM {entry}"
+                self.status.text = "ACTIVE"
+                signal_key = f"SELL_{entry}"
 
-            except:
-                self.expiry_time = datetime.now() + timedelta(seconds=60)
+            else:
 
-            self.last_signal = signal_key
+                self.signal.set_bg((0.1, 0.1, 0.15, 1))
+                self.entry.text = "SIGNAL EXPIRED"
+                self.status.text = "DETECTED"
 
-        # ================= HISTORY (STABLE) =================
-        hist = f"{signal} | JAM {entry if entry else '-'}"
+                self.expiry_time = None
+                self.last_signal = ""
 
-        if not self.history or self.history[0] != hist:
+            if signal_key and signal_key != self.last_signal:
 
-            self.history.insert(0, hist)
+                try:
+                    h, m = map(int, entry.split(":"))
 
-            self.history_box.add_widget(
-                HistoryRow(hist),
-                index=0
-            )
+                    base_time = datetime.now().replace(
+                        hour=h,
+                        minute=m,
+                        second=0
+                    )
 
-    except:
+                    self.expiry_time = base_time + timedelta(minutes=1)
 
-        self.entry.text = "OFFLINE"
-        self.status.text = "SERVER ERROR"
+                except:
+                    self.expiry_time = datetime.now() + timedelta(seconds=60)
+
+                self.last_signal = signal_key
+
+            hist = f"{signal} | JAM {entry if entry else '-'}"
+
+            if not self.history or self.history[0] != hist:
+                self.history.insert(0, hist)
+                self.history_box.add_widget(HistoryRow(hist), index=0)
+
+        except:
+            self.entry.text = "OFFLINE"
+            self.status.text = "SERVER ERROR"
 
 
 # =========================
-# MARTINGALE (UNCHANGED)
+# MARTINGALE
 # =========================
 class Martingale(Screen):
 
@@ -294,7 +271,6 @@ class Martingale(Screen):
             spacing=dp(6)
         )
 
-        # ================= HEADER =================
         self.header = Card(h=60)
 
         self.header_label = Label(
@@ -306,7 +282,6 @@ class Martingale(Screen):
         self.header.add_widget(self.header_label)
         root.add_widget(self.header)
 
-        # ================= INPUT =================
         self.input = TextInput(
             hint_text="Paste SIGNAL VIP di sini...",
             multiline=True,
@@ -316,7 +291,6 @@ class Martingale(Screen):
 
         root.add_widget(self.input)
 
-        # ================= ENTER BUTTON =================
         btn = Button(
             text="ENTER",
             size_hint_y=None,
@@ -326,7 +300,6 @@ class Martingale(Screen):
         btn.bind(on_press=self.parse)
         root.add_widget(btn)
 
-        # ================= SCROLL =================
         scroll = ScrollView()
 
         self.listbox = BoxLayout(
@@ -341,7 +314,6 @@ class Martingale(Screen):
         scroll.add_widget(self.listbox)
         root.add_widget(scroll)
 
-        # ================= CLEAR BUTTON =================
         self.clear_btn = Button(
             text="HAPUS DATA",
             size_hint_y=None,
@@ -354,17 +326,12 @@ class Martingale(Screen):
 
         self.add_widget(root)
 
-    # ================= CLEAR ALL DATA =================
     def clear_data(self, instance):
-
         self.listbox.clear_widgets()
         self.row_state = {}
         self.input.text = ""
-
         self.header_label.text = "SIGNAL VIP STC | -"
-        self.input.focus = True
 
-    # ================= PARSE SIGNAL =================
     def parse(self, instance):
 
         self.listbox.clear_widgets()
@@ -384,47 +351,16 @@ class Martingale(Screen):
 
             row = Card(h=28)
 
-            line = BoxLayout(
-                spacing=dp(2),
-                padding=dp(2)
-            )
+            line = BoxLayout(spacing=dp(2), padding=dp(2))
 
-            # ================= JAM =================
-            line.add_widget(
-                Label(
-                    text=jam,
-                    size_hint_x=.3,
-                    font_size=dp(9)
-                )
-            )
+            line.add_widget(Label(text=jam, size_hint_x=.3, font_size=dp(9)))
+            line.add_widget(Label(text=arah, size_hint_x=.15, font_size=dp(9)))
 
-            # ================= ARAH =================
-            line.add_widget(
-                Label(
-                    text=arah,
-                    size_hint_x=.15,
-                    font_size=dp(9)
-                )
-            )
-
-            # ================= COLOR BOX =================
-            kotak = Button(
-                text="",
-                size_hint_x=.1,
-                background_normal=""
-            )
-
+            kotak = Button(text="", size_hint_x=.1, background_normal="")
             kotak.background_color = (0, 1, 0, 1) if arah == "B" else (1, 0, 0, 1)
-
             line.add_widget(kotak)
 
-            # ================= TOGGLE ON -> WIN -> LOSS =================
-            btn = Button(
-                text="ON",
-                size_hint_x=.25,
-                font_size=dp(9),
-                background_normal=""
-            )
+            btn = Button(text="ON", size_hint_x=.25, font_size=dp(9), background_normal="")
 
             def cycle(b, rid=row_id):
 
@@ -446,20 +382,10 @@ class Martingale(Screen):
                     b.background_color = (0.2, 0.2, 0.2, 1)
 
             btn.bind(on_press=cycle)
-
             line.add_widget(btn)
 
-            # ================= DELETE ROW =================
-            delete = Button(
-                text="X",
-                size_hint_x=.1,
-                font_size=dp(9)
-            )
-
-            def remove_row(widget_row=row):
-                self.listbox.remove_widget(widget_row)
-
-            delete.bind(on_press=remove_row)
+            delete = Button(text="X", size_hint_x=.1, font_size=dp(9))
+            delete.bind(on_press=lambda w, r=row: self.listbox.remove_widget(r))
 
             line.add_widget(delete)
 
@@ -483,7 +409,6 @@ class AppMain(App):
         sm.add_widget(mart)
 
         root = BoxLayout(orientation="vertical")
-
         root.add_widget(sm)
 
         nav = BoxLayout(size_hint_y=None, height=dp(50))
