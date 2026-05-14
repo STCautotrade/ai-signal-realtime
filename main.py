@@ -11,6 +11,8 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy.uix.image import Image
+from kivy.uix.textinput import TextInput
+import re
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Color, RoundedRectangle, Line
 
@@ -452,18 +454,16 @@ class Martingale(Screen):
 
         root=BoxLayout(
             orientation="vertical",
-            padding=dp(8),
+            padding=dp(6),
             spacing=dp(6)
         )
 
 
-        title=Card(
-            h=60
-        )
+        title=Card(h=60)
 
         title.add_widget(
             Label(
-                text="MARTINGALE SYSTEM",
+                text="MARTINGALE VIP PARSER",
                 font_size=dp(18),
                 bold=True
             )
@@ -472,14 +472,26 @@ class Martingale(Screen):
         root.add_widget(title)
 
 
+        self.input=TextInput(
+            hint_text="Paste SIGNAL VIP di sini...",
+            multiline=True,
+            size_hint_y=None,
+            height=dp(120)
+        )
+
+        root.add_widget(
+            self.input
+        )
+
+
         btn=Button(
-            text="HITUNG",
+            text="ENTER",
             size_hint_y=None,
             height=dp(45)
         )
 
         btn.bind(
-            on_press=self.calc
+            on_press=self.parse
         )
 
         root.add_widget(btn)
@@ -487,74 +499,138 @@ class Martingale(Screen):
 
         scroll=ScrollView()
 
-        self.result_box=Card(
-            h=1000
-        )
-
-        self.result=Label(
-            text="Klik HITUNG",
-            font_size=dp(12),
-            halign="left",
-            valign="top",
-            text_size=(dp(300),None),
+        self.listbox=BoxLayout(
+            orientation="vertical",
+            spacing=dp(4),
             size_hint_y=None
         )
 
-        self.result.bind(
-            texture_size=self.resize
-        )
-
-        self.result_box.add_widget(
-            self.result
+        self.listbox.bind(
+            minimum_height=
+            self.listbox.setter(
+                "height"
+            )
         )
 
         scroll.add_widget(
-            self.result_box
+            self.listbox
         )
 
         root.add_widget(
             scroll
         )
 
-        self.base=14000
-
         self.add_widget(root)
 
 
-    def resize(self,*args):
+    def status(self,btn,val):
 
-        self.result.height=(
-            self.result.texture_size[1]
-            +dp(50)
+        btn.text=val
+
+
+    def parse(self,instance):
+
+        self.listbox.clear_widgets()
+
+        txt=self.input.text
+
+        data=re.findall(
+            r'(\d\d:\d\d)\s*([BS])',
+            txt
         )
 
-        self.result_box.height=(
-            self.result.height
-            +dp(40)
-        )
+
+        for jam,arah in data:
+
+            row=Card(
+                h=50
+            )
+
+            line=BoxLayout(
+                spacing=dp(5)
+            )
 
 
-    def calc(self,instance):
-
-        mults=[2,2.5,3,4]
-
-        out=""
-
-        for m in mults:
-
-            val=self.base
-
-            out+=f"\n===== X{m} =====\n"
-
-            for i in range(1,11):
-
-                val*=m
-
-                out+=f"K{i}: {int(val):,}\n"
-
-        self.result.text=out
+            line.add_widget(
+                Label(
+                    text=jam,
+                    size_hint_x=.3
+                )
+            )
 
 
+            line.add_widget(
+                Label(
+                    text=arah,
+                    size_hint_x=.2
+                )
+            )
+
+
+            kotak=Button(
+                text="",
+                size_hint_x=.15,
+                background_normal=""
+            )
+
+
+            if arah=="B":
+
+                kotak.background_color=(
+                    0,1,0,1
+                )
+
+            else:
+
+                kotak.background_color=(
+                    1,0,0,1
+                )
+
+
+            line.add_widget(
+                kotak
+            )
+
+
+            win=Button(
+                text="WIN",
+                size_hint_x=.2
+            )
+
+            loss=Button(
+                text="LOSS",
+                size_hint_x=.2
+            )
+
+
+            win.bind(
+                on_press=lambda x:
+                self.status(
+                    x,
+                    "✅"
+                )
+            )
+
+            loss.bind(
+                on_press=lambda x:
+                self.status(
+                    x,
+                    "❌"
+                )
+            )
+
+
+            line.add_widget(win)
+            line.add_widget(loss)
+
+            row.add_widget(
+                line
+            )
+
+            self.listbox.add_widget(
+                row
+            )
+            
 class AppMain(App):
 
     def build(self):
