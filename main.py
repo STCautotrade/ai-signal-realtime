@@ -17,7 +17,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Color, RoundedRectangle, Line
 
 
-DATA_URL = "http://157.10.252.46:5000/signal"
+DATA_URL = "http://157.10.252.46:5000/app_state"
 BASE_DIR = os.path.dirname(__file__)
 
 
