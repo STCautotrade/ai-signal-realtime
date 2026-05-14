@@ -17,12 +17,15 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Color, RoundedRectangle, Line
 
 
-DATA_URL = "http://157.10.252.46:5000/signal"
+# =========================
+# API (FIXED)
+# =========================
+DATA_URL = "http://157.10.252.46:5000/app_state"
 BASE_DIR = os.path.dirname(__file__)
 
 
 # =========================
-# CARD
+# CARD UI
 # =========================
 class Card(BoxLayout):
 
@@ -56,56 +59,52 @@ class Card(BoxLayout):
 
 
 # =========================
-# HISTORY ROW
-# =========================
-class HistoryRow(Card):
-    def __init__(self, text):
-        super().__init__(h=30, bg=(0.08,0.08,0.12,1))
-        self.add_widget(Label(text=text, font_size=dp(11)))
-
-
-# =========================
-# HOME
+# HOME SCREEN
 # =========================
 class Home(Screen):
 
     def __init__(self, **kw):
         super().__init__(**kw)
 
+        self.history = []
+        self.expiry_time = None
+        self.last_signal = ""
+
         root = BoxLayout(orientation="vertical")
 
         # HEADER IMAGE
         root.add_widget(
             Image(
-                source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
+                source=os.path.join(BASE_DIR, "banner.png"),
                 size_hint_y=None,
-                height=dp(130),
+                height=dp(140),
                 allow_stretch=True,
                 keep_ratio=False
             )
         )
 
-        # MARKET + CLOCK
+        # TOP BAR
         top = BoxLayout(size_hint_y=None, height=dp(40))
 
         self.market = Card(h=40)
         self.clock = Card(h=40)
 
-        self.market_label = Label(text="CRYPTO ID 85%")
-        self.clock_label = Label(text="00:00:00")
+        self.market_label = Label(text="CRYPTO IDX", font_size=dp(12))
+        self.clock_label = Label(text="00:00:00", font_size=dp(12))
 
         self.market.add_widget(self.market_label)
         self.clock.add_widget(self.clock_label)
 
         top.add_widget(self.market)
         top.add_widget(self.clock)
+
         root.add_widget(top)
 
         # SIGNAL
         self.signal = Card(h=120)
-        self.signal_title = Label(text="SIGNAL KONFIGURASI TRADE")
-        self.signal_main = Label(text="WAITING...")
-        self.signal_status = Label(text="DETECTED")
+        self.signal_title = Label(text="SIGNAL STC", font_size=dp(16), bold=True)
+        self.signal_main = Label(text="WAITING", font_size=dp(14))
+        self.signal_status = Label(text="DETECTED", font_size=dp(12))
 
         self.signal.add_widget(self.signal_title)
         self.signal.add_widget(self.signal_main)
@@ -113,34 +112,24 @@ class Home(Screen):
 
         root.add_widget(self.signal)
 
-        # EXPIRE
-        self.expire_label = Label(text="MENUNGGU SIGNAL", size_hint_y=None, height=dp(25))
+        self.expire_label = Label(text="MENUNGGU SIGNAL", size_hint_y=None, height=dp(30))
         root.add_widget(self.expire_label)
 
-        # HISTORY TITLE
+        # HISTORY
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
-        # HEADER 7 KOLOM
-        header = BoxLayout(size_hint_y=None, height=dp(25))
-        for t in ["SIGNAL","ENTRY","STATUS","K1","K2","K3","K4"]:
-            header.add_widget(Label(text=t, font_size=dp(10)))
-        root.add_widget(header)
+        self.history_scroll = ScrollView()
+        self.history_box = BoxLayout(orientation="vertical", size_hint_y=None)
+        self.history_box.bind(minimum_height=self.history_box.setter("height"))
 
-        # SCROLL HISTORY
-        self.scroll = ScrollView()
-        self.box = BoxLayout(orientation="vertical", size_hint_y=None)
-        self.box.bind(minimum_height=self.box.setter("height"))
-        self.scroll.add_widget(self.box)
-        root.add_widget(self.scroll)
+        self.history_scroll.add_widget(self.history_box)
+        root.add_widget(self.history_scroll)
 
         self.add_widget(root)
 
-        self.expiry_time = None
-        self.last_signal = ""
-
         Clock.schedule_interval(self.load, 2)
-        Clock.schedule_interval(self.clock_update, 1)
         Clock.schedule_interval(self.update_expiry, 1)
+        Clock.schedule_interval(self.clock_update, 1)
 
     def clock_update(self, dt):
         self.clock_label.text = datetime.now().strftime("%H:%M:%S")
@@ -148,7 +137,7 @@ class Home(Screen):
     def set_signal(self, mode, signal="", entry=""):
 
         if mode == "ACTIVE":
-            self.signal.set_bg((0,0.8,0.3,1) if signal=="BUY" else (1,0.1,0.2,1))
+            self.signal.set_bg((0,0.8,0.3,1) if signal=="BUY" else (1,0.2,0.2,1))
             self.signal_main.text = f"{signal} {entry}"
             self.signal_status.text = "ACTIVE"
 
@@ -165,7 +154,6 @@ class Home(Screen):
     def update_expiry(self, dt):
 
         if not self.expiry_time:
-            self.expire_label.text = "MENUNGGU SIGNAL"
             return
 
         remaining = int((self.expiry_time - datetime.now()).total_seconds())
@@ -173,148 +161,106 @@ class Home(Screen):
         if remaining <= 0:
             self.expiry_time = None
             self.set_signal("EXPIRED")
-            self.expire_label.text = "EXPIRED : 0"
             return
 
-        self.expire_label.text = f"EXPIRED : {remaining}"
+        self.expire_label.text = f"EXPIRED {remaining}s"
 
     def load(self, dt):
 
         try:
             data = requests.get(DATA_URL, timeout=5).json()
-
-            signal = data.get("signal","WAIT").upper()
-            entry = data.get("entry_time")
-
-            if signal in ["BUY","SELL"] and entry:
-
-                key = f"{signal}_{entry}"
-
-                if key != self.last_signal:
-                    self.set_signal("ACTIVE", signal, entry)
-
-                    try:
-                        h,m = map(int, entry.split(":"))
-                        base = datetime.now().replace(hour=h, minute=m, second=0)
-                        self.expiry_time = base + timedelta(minutes=1)
-                    except:
-                        self.expiry_time = datetime.now() + timedelta(seconds=60)
-
-                    self.last_signal = key
-
-            # HISTORY ONLY EXPIRED
-            if signal == "EXPIRED":
-                row = BoxLayout(size_hint_y=None, height=dp(25))
-
-                row.add_widget(Label(text=signal))
-                row.add_widget(Label(text=str(entry)))
-                row.add_widget(Label(text="EXPIRED"))
-
-                for _ in range(4):
-                    row.add_widget(Label(text="-"))
-
-                self.box.add_widget(row)
-
         except:
-            self.set_signal("WAIT")
+            data = {}
+
+        signal = (data.get("signal") or "WAITING").upper()
+        entry = data.get("entry_time") or "-"
+
+        if signal in ["BUY", "SELL"]:
+
+            key = f"{signal}_{entry}"
+
+            if key != self.last_signal:
+                self.set_signal("ACTIVE", signal, entry)
+                self.expiry_time = datetime.now() + timedelta(minutes=1)
+                self.last_signal = key
+
+        hist = f"{signal} | {entry}"
+
+        if not self.history or self.history[0] != hist:
+            self.history.insert(0, hist)
+            self.history_box.add_widget(Label(text=hist, size_hint_y=None, height=dp(25)))
 
 
 # =========================
-# MART
+# MARTINGALE
 # =========================
-class Mart(Screen):
+class Martingale(Screen):
 
     def __init__(self, **kw):
         super().__init__(**kw)
 
-        self.state = {}
-        self.input_mode = True
+        self.row_state = {}
 
         root = BoxLayout(orientation="vertical")
 
-        self.header = Label(text="SIGNAL VIP STC | -", size_hint_y=None, height=dp(40))
+        self.header = Label(text="SIGNAL VIP STC", size_hint_y=None, height=dp(50))
         root.add_widget(self.header)
 
-        # INPUT
-        self.input_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(160))
+        self.input = TextInput(size_hint_y=None, height=dp(120))
+        root.add_widget(self.input)
 
-        self.input = TextInput(hint_text="Paste signal")
-        self.btn = Button(text="ENTER")
-        self.btn.bind(on_press=self.build_table)
+        btn = Button(text="ENTER", size_hint_y=None, height=dp(60))
+        btn.bind(on_press=self.parse)
+        root.add_widget(btn)
 
-        self.input_box.add_widget(self.input)
-        self.input_box.add_widget(self.btn)
-
-        root.add_widget(self.input_box)
-
-        # TABLE
         self.scroll = ScrollView()
-        self.box = BoxLayout(orientation="vertical", size_hint_y=None)
-        self.box.bind(minimum_height=self.box.setter("height"))
-        self.scroll.add_widget(self.box)
-
-        self.clear = Button(text="HAPUS ALL", size_hint_y=None, height=dp(50))
-        self.clear.bind(on_press=self.reset_all)
+        self.list_box = BoxLayout(orientation="vertical", size_hint_y=None)
+        self.list_box.bind(minimum_height=self.list_box.setter("height"))
+        self.scroll.add_widget(self.list_box)
 
         root.add_widget(self.scroll)
-        root.add_widget(self.clear)
+
+        clear = Button(text="HAPUS ALL", size_hint_y=None, height=dp(60))
+        clear.bind(on_press=self.reset)
+        root.add_widget(clear)
 
         self.add_widget(root)
 
-    def build_table(self, instance):
+    def reset(self, *args):
+        self.list_box.clear_widgets()
+        self.row_state = {}
+
+    def parse(self, instance):
 
         txt = self.input.text.upper()
-        self.header.text = "SIGNAL VIP STC | " + datetime.now().strftime("%d %b %Y")
-
-        self.input_box.opacity = 0
-        self.input_box.disabled = True
-
         data = re.findall(r'(\d{1,2}:\d{2})\s*([BS])', txt)
 
-        for i,(jam,dir) in enumerate(data):
+        for i, (jam, arah) in enumerate(data):
 
-            rid = f"{jam}_{i}"
-            self.state[rid] = "ON"
+            row_id = f"{jam}_{i}"
+            self.row_state[row_id] = "ON"
 
-            row = BoxLayout(size_hint_y=None, height=dp(40))
-            row.add_widget(Label(text=jam))
-            row.add_widget(Label(text=dir))
+            row = BoxLayout(size_hint_y=None, height=dp(50))
 
+            label = Label(text=f"{jam} {arah}")
             btn = Button(text="ON")
 
-            def cycle(b, rid=rid):
+            def cycle(b, rid=row_id):
 
-                s = self.state[rid]
+                order = ["ON","K1","K2","K3","K4","K5","WIN","LOSS"]
 
-                if s=="ON":
-                    self.state[rid]="K1"; b.text="K1"
-                elif s=="K1":
-                    self.state[rid]="K2"; b.text="K2"
-                elif s=="K2":
-                    self.state[rid]="K3"; b.text="K3"
-                elif s=="K3":
-                    self.state[rid]="K4"; b.text="K4"
-                elif s=="K4":
-                    self.state[rid]="K5"; b.text="K5"
-                elif s=="K5":
-                    self.state[rid]="WIN"; b.text="WIN"
-                elif s=="WIN":
-                    self.state[rid]="LOSS"; b.text="LOSS"
-                else:
-                    self.state[rid]="ON"; b.text="ON"
+                state = self.row_state[rid]
+                idx = order.index(state) if state in order else 0
+                idx = (idx + 1) % len(order)
+
+                self.row_state[rid] = order[idx]
+                b.text = order[idx]
 
             btn.bind(on_press=cycle)
+
+            row.add_widget(label)
             row.add_widget(btn)
-
-            self.box.add_widget(row)
-
-    def reset_all(self, instance):
-
-        self.box.clear_widgets()
-        self.input.text = ""
-
-        self.input_box.opacity = 1
-        self.input_box.disabled = False
+            self.list_box.add_widget(row)
 
 
 # =========================
@@ -325,18 +271,16 @@ class AppMain(App):
     def build(self):
 
         sm = ScreenManager()
-
         sm.add_widget(Home(name="home"))
-        sm.add_widget(Mart(name="mart"))
+        sm.add_widget(Martingale(name="mart"))
 
         root = BoxLayout(orientation="vertical")
-
         root.add_widget(sm)
 
         nav = BoxLayout(size_hint_y=None, height=dp(50))
 
-        nav.add_widget(Button(text="HOME", on_press=lambda x: sm.current="home"))
-        nav.add_widget(Button(text="MART", on_press=lambda x: sm.current="mart"))
+        nav.add_widget(Button(text="HOME", on_press=lambda x: setattr(sm, "current", "home")))
+        nav.add_widget(Button(text="MART", on_press=lambda x: setattr(sm, "current", "mart")))
         nav.add_widget(Button(text="TRADE", on_press=lambda x: webbrowser.open("https://stcbroker.id")))
 
         root.add_widget(nav)
