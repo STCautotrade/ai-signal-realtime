@@ -2,7 +2,6 @@ import requests
 from datetime import datetime, timedelta
 import webbrowser
 import os
-import time
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -28,8 +27,8 @@ class Card(BoxLayout):
 
     def __init__(
         self,
-        bg=(0.03,0.05,0.09,1),
-        border=(0,1,1,1),
+        bg=(0.1,0.1,0.15,1),
+        border=(0.2,0.7,1,1),
         h=90,
         **kwargs
     ):
@@ -37,9 +36,8 @@ class Card(BoxLayout):
         super().__init__(**kwargs)
 
         self.orientation="vertical"
-        self.padding=dp(8)
-        self.spacing=dp(4)
-
+        self.padding=dp(5)
+        self.spacing=dp(3)
         self.size_hint_y=None
         self.height=dp(h)
 
@@ -48,7 +46,7 @@ class Card(BoxLayout):
             self.bg=Color(*bg)
 
             self.rect=RoundedRectangle(
-                radius=[18]
+                radius=[14]
             )
 
         with self.canvas.after:
@@ -56,8 +54,8 @@ class Card(BoxLayout):
             self.border=Color(*border)
 
             self.line=Line(
-                rounded_rectangle=(0,0,0,0,18),
-                width=1.8
+                rounded_rectangle=(0,0,0,0,14),
+                width=1
             )
 
         self.bind(
@@ -74,12 +72,14 @@ class Card(BoxLayout):
         self.line.rounded_rectangle=(
             *self.pos,
             *self.size,
-            18
+            14
         )
 
 
     def set_bg(self,c):
+
         self.bg.rgba=c
+
 
 
 # =========================
@@ -91,34 +91,19 @@ class HistoryRow(Card):
     def __init__(self,text):
 
         super().__init__(
-            h=60,
+            h=30,
             bg=(0.08,0.08,0.12,1)
         )
 
         self.label=Label(
             text=text,
-            font_size=dp(10),
-            halign="left",
-            valign="middle",
-            text_size=(dp(300),None)
-        )
-
-        self.label.bind(
-            texture_size=self.resize
+            font_size=dp(9)
         )
 
         self.add_widget(
             self.label
         )
 
-    def resize(self,*args):
-
-        h=max(
-            dp(60),
-            self.label.texture_size[1]+dp(20)
-        )
-
-        self.height=h
 
 
 # =========================
@@ -130,8 +115,6 @@ class Home(Screen):
     def __init__(self,**kw):
 
         super().__init__(**kw)
-
-        self.lang="id"
 
         root=BoxLayout(
             orientation="vertical",
@@ -158,8 +141,10 @@ class Home(Screen):
             spacing=dp(5)
         )
 
+
         self.market=Card(h=50)
         self.clock=Card(h=50)
+
 
         self.market_label=Label(
             text="CRYPTO IDX 85%",
@@ -167,9 +152,10 @@ class Home(Screen):
         )
 
         self.clock_label=Label(
-            text="00:00:00",
+            text="00:00:00 WIB",
             font_size=dp(11)
         )
+
 
         self.market.add_widget(
             self.market_label
@@ -179,42 +165,14 @@ class Home(Screen):
             self.clock_label
         )
 
+
         row.add_widget(self.market)
         row.add_widget(self.clock)
 
         root.add_widget(row)
 
 
-        lang_row=BoxLayout(
-            size_hint_y=None,
-            height=dp(40),
-            spacing=dp(4)
-        )
-
-        btn_id=Button(
-            text="Indonesia",
-            on_press=lambda x:
-            self.set_lang("id")
-        )
-
-        btn_en=Button(
-            text="English",
-            on_press=lambda x:
-            self.set_lang("en")
-        )
-
-        btn_es=Button(
-            text="Español",
-            on_press=lambda x:
-            self.set_lang("es")
-        )
-
-        lang_row.add_widget(btn_id)
-        lang_row.add_widget(btn_en)
-        lang_row.add_widget(btn_es)
-
-        root.add_widget(lang_row)
-
+        # SIGNAL
 
         self.signal=Card(h=120)
 
@@ -224,7 +182,7 @@ class Home(Screen):
         )
 
         self.entry=Label(
-            text="ENTRY:-",
+            text="ENTRY : -",
             font_size=dp(12)
         )
 
@@ -232,6 +190,7 @@ class Home(Screen):
             text="SYSTEM STANDBY",
             font_size=dp(10)
         )
+
 
         self.signal.add_widget(
             self.signal_label
@@ -250,13 +209,16 @@ class Home(Screen):
         )
 
 
+        # EXPIRE
+
         self.expire_card=Card(
-            h=70
+            h=70,
+            bg=(0.08,0.08,0.12,1)
         )
 
         self.expire_label=Label(
-            text="WAITING SIGNAL",
-            font_size=dp(20),
+            text="WAITING SIGNAL...",
+            font_size=dp(22),
             bold=True
         )
 
@@ -268,6 +230,8 @@ class Home(Screen):
             self.expire_card
         )
 
+
+        # HISTORY
 
         root.add_widget(
             Label(
@@ -283,9 +247,10 @@ class Home(Screen):
             height=dp(220)
         )
 
+
         self.history_box=BoxLayout(
             orientation="vertical",
-            spacing=dp(4),
+            spacing=dp(2),
             size_hint_y=None
         )
 
@@ -296,9 +261,11 @@ class Home(Screen):
             )
         )
 
+
         self.history_scroll.add_widget(
             self.history_box
         )
+
 
         root.add_widget(
             self.history_scroll
@@ -306,9 +273,13 @@ class Home(Screen):
 
         self.add_widget(root)
 
+
+        # STATE
+
         self.history=[]
         self.expiry_time=None
         self.last_signal=""
+
 
         Clock.schedule_interval(
             self.load,
@@ -326,58 +297,13 @@ class Home(Screen):
         )
 
 
-    def set_lang(self,lang):
-
-        self.lang=lang
-
-
     def clock_update(self,dt):
-
-        zona=time.tzname[0]
 
         self.clock_label.text=(
             datetime.now().strftime(
-                f"%H:%M:%S {zona}"
+                "%H:%M:%S WIB"
             )
         )
-
-
-    def expired(self,t):
-
-        try:
-
-            return(
-                datetime.now().strftime(
-                    "%H:%M"
-                )>t
-            )
-
-        except:
-
-            return False
-
-
-    def waiting_text(self):
-
-        if self.lang=="id":
-            return "MENUNGGU SIGNAL BERIKUTNYA"
-
-        elif self.lang=="en":
-            return "WAITING NEXT SIGNAL"
-
-        return "ESPERANDO SIGUIENTE SEÑAL"
-
-
-
-    def signal_text(self):
-
-        if self.lang=="id":
-            return "MENUNGGU SIGNAL..."
-
-        elif self.lang=="en":
-            return "WAITING SIGNAL..."
-
-        return "ESPERANDO SEÑAL..."
 
 
     def update_expiry(self,dt):
@@ -385,7 +311,7 @@ class Home(Screen):
         if not self.expiry_time:
 
             self.expire_label.text=(
-                self.waiting_text()
+                "MENUNGGU SIGNAL BERIKUTNYA"
             )
 
             return
@@ -393,17 +319,19 @@ class Home(Screen):
 
         remaining=int(
             (
-            self.expiry_time-
-            datetime.now()
+                self.expiry_time-
+                datetime.now()
             ).total_seconds()
         )
 
+
         if remaining<0:
+
             remaining=0
 
 
         self.expire_label.text=(
-            f"EXPIRED : {remaining:02d} DETIK"
+            f"EXPIRED : {remaining} DETIK"
         )
 
 
@@ -442,70 +370,116 @@ class Home(Screen):
                     (0,0.7,0.3,1)
                 )
 
-                self.signal_label.text="BUY NOW"
+                self.signal_label.text=(
+                    "BUY NOW"
+                )
 
                 self.entry.text=(
                     f"ENTRY BUY DI JAM {entry}"
                 )
 
-                self.status.text="ACTIVE"
+                self.status.text=(
+                    "ACTIVE"
+                )
+
 
                 signal_key=signal+entry
 
+
                 if signal_key!=self.last_signal:
 
-                    self.expiry_time=(
-                        datetime.now()+
-                        timedelta(seconds=60)
-                    )
+                    try:
+
+                        h,m=map(
+                            int,
+                            entry.split(":")
+                        )
+
+
+                        expiry=datetime.now().replace(
+                            hour=h,
+                            minute=m,
+                            second=0
+                        )+timedelta(minutes=1)
+
+
+                        self.expiry_time=expiry
+
+                    except:
+
+                        self.expiry_time=(
+                            datetime.now()+
+                            timedelta(seconds=60)
+                        )
+
 
                     self.last_signal=signal_key
 
 
-                hist=(
-                    f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry}"
-                )
+                hist=f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry}"
 
 
             elif signal=="SELL":
 
                 self.signal.set_bg(
-                    (0.9,0.2,0.2,1)
+                    (0.8,0.1,0.2,1)
                 )
 
-                self.signal_label.text="SELL NOW"
+                self.signal_label.text=(
+                    "SELL NOW"
+                )
 
                 self.entry.text=(
                     f"ENTRY SELL DI JAM {entry}"
                 )
 
-                self.status.text="ACTIVE"
+                self.status.text=(
+                    "ACTIVE"
+                )
+
 
                 signal_key=signal+entry
 
+
                 if signal_key!=self.last_signal:
 
-                    self.expiry_time=(
-                        datetime.now()+
-                        timedelta(seconds=60)
-                    )
+                    try:
+
+                        h,m=map(
+                            int,
+                            entry.split(":")
+                        )
+
+                        expiry=datetime.now().replace(
+                            hour=h,
+                            minute=m,
+                            second=0
+                        )+timedelta(minutes=1)
+
+                        self.expiry_time=expiry
+
+                    except:
+
+                        self.expiry_time=(
+                            datetime.now()+
+                            timedelta(seconds=60)
+                        )
+
 
                     self.last_signal=signal_key
 
 
-                hist=(
-                    f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry}"
-                )
+                hist=f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry}"
 
 
             else:
 
                 self.signal.set_bg(
-                    (0.03,0.05,0.09,1)
+                    (0.1,0.1,0.15,1)
                 )
 
                 self.signal_label.text=(
-                    self.signal_text()
+                    "WAITING SIGNAL..."
                 )
 
                 self.entry.text="-"
@@ -525,20 +499,21 @@ class Home(Screen):
                     hist
                 )
 
-
-                row=HistoryRow(hist)
+                row=HistoryRow(
+                    hist
+                )
 
 
                 if "BUY" in hist:
 
                     row.set_bg(
-                        (0,1,0.3,0.2)
+                        (0,1,0.4,0.15)
                     )
 
                 else:
 
                     row.set_bg(
-                        (1,0.2,0.2,0.2)
+                        (1,0.2,0.2,0.15)
                     )
 
 
@@ -548,21 +523,16 @@ class Home(Screen):
                 )
 
 
-                if len(
-                    self.history_box.children
-                )>20:
-
-                    self.history_box.remove_widget(
-                        self.history_box.children[-1]
-                    )
-
-
         except:
 
             self.signal_label.text="OFFLINE"
             self.status.text="SERVER ERROR"
 
 
+
+# =========================
+# MARTINGALE
+# =========================
 
 class Martingale(Screen):
 
@@ -571,39 +541,111 @@ class Martingale(Screen):
         super().__init__(**kw)
 
         root=BoxLayout(
-            orientation="vertical"
+            orientation="vertical",
+            padding=dp(8)
         )
+
+        self.base=14000
 
         root.add_widget(
             Label(
-                text="MARTINGALE"
+                text="MARTINGALE",
+                font_size=dp(14)
             )
         )
 
+        self.result=Label(
+            font_size=dp(10)
+        )
+
+
+        btn=Button(
+            text="HITUNG",
+            size_hint_y=None,
+            height=dp(40)
+        )
+
+        btn.bind(
+            on_press=self.calc
+        )
+
+        root.add_widget(btn)
+        root.add_widget(self.result)
+
         self.add_widget(root)
+
+
+    def calc(self,instance):
+
+        mults=[2,2.5,3,4]
+
+        out=""
+
+        for m in mults:
+
+            val=self.base
+
+            out+=f"\nX{m}\n"
+
+            for i in range(1,11):
+
+                val*=m
+
+                out+=f"K{i}: {int(val)}\n"
+
+        self.result.text=out
 
 
 
 class AppMain(App):
 
-
     def build(self):
 
         sm=ScreenManager()
 
-        home=Home(
-            name="home"
-        )
-
-        mart=Martingale(
-            name="mart"
-        )
+        home=Home(name="home")
+        mart=Martingale(name="mart")
 
         sm.add_widget(home)
         sm.add_widget(mart)
 
-        return sm
+        root=BoxLayout(
+            orientation="vertical"
+        )
 
+        root.add_widget(sm)
+
+        nav=BoxLayout(
+            size_hint_y=None,
+            height=dp(50)
+        )
+
+        nav.add_widget(
+            Button(
+                text="HOME",
+                on_press=lambda x: sm.switch_to(home)
+            )
+        )
+
+        nav.add_widget(
+            Button(
+                text="MART",
+                on_press=lambda x: sm.switch_to(mart)
+            )
+        )
+
+        nav.add_widget(
+            Button(
+                text="TRADE",
+                on_press=lambda x:webbrowser.open(
+                    "https://stcbroker.id"
+                )
+            )
+        )
+
+        root.add_widget(nav)
+
+        return root
 
 
 if __name__=="__main__":
