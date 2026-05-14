@@ -274,14 +274,30 @@ class Home(Screen):
 class Martingale(Screen):
 
     def __init__(self, **kw):
+
         super().__init__(**kw)
 
-        root = BoxLayout(orientation="vertical", padding=dp(6), spacing=dp(6))
+        self.row_state = {}
 
-        title = Card(h=60)
-        title.add_widget(Label(text="MARTINGALE VIP PARSER", font_size=dp(18), bold=True))
-        root.add_widget(title)
+        root = BoxLayout(
+            orientation="vertical",
+            padding=dp(6),
+            spacing=dp(6)
+        )
 
+        # ================= HEADER =================
+        self.header = Card(h=60)
+
+        self.header_label = Label(
+            text="SIGNAL VIP STC | -",
+            font_size=dp(14),
+            bold=True
+        )
+
+        self.header.add_widget(self.header_label)
+        root.add_widget(self.header)
+
+        # ================= INPUT =================
         self.input = TextInput(
             hint_text="Paste SIGNAL VIP di sini...",
             multiline=True,
@@ -291,15 +307,23 @@ class Martingale(Screen):
 
         root.add_widget(self.input)
 
-        btn = Button(text="ENTER", size_hint_y=None, height=dp(45))
+        # ================= ENTER BUTTON =================
+        btn = Button(
+            text="ENTER",
+            size_hint_y=None,
+            height=dp(45)
+        )
+
         btn.bind(on_press=self.parse)
         root.add_widget(btn)
 
+        # ================= SCROLL =================
         scroll = ScrollView()
 
         self.listbox = BoxLayout(
             orientation="vertical",
-            spacing=dp(4),
+            spacing=dp(2),
+            padding=dp(2),
             size_hint_y=None
         )
 
@@ -308,39 +332,127 @@ class Martingale(Screen):
         scroll.add_widget(self.listbox)
         root.add_widget(scroll)
 
+        # ================= CLEAR BUTTON =================
+        self.clear_btn = Button(
+            text="HAPUS DATA",
+            size_hint_y=None,
+            height=dp(45),
+            background_normal=""
+        )
+
+        self.clear_btn.bind(on_press=self.clear_data)
+        root.add_widget(self.clear_btn)
+
         self.add_widget(root)
 
-    def status(self, btn, val):
-        btn.text = val
+    # ================= CLEAR ALL DATA =================
+    def clear_data(self, instance):
 
+        self.listbox.clear_widgets()
+        self.row_state = {}
+        self.input.text = ""
+
+        self.header_label.text = "SIGNAL VIP STC | -"
+        self.input.focus = True
+
+    # ================= PARSE SIGNAL =================
     def parse(self, instance):
 
         self.listbox.clear_widgets()
 
-        data = re.findall(r'(\d\d:\d\d)\s*([BS])', self.input.text)
+        now = datetime.now()
+        self.header_label.text = f"SIGNAL VIP STC | {now.strftime('%a, %d %b %Y')}"
 
-        for jam, arah in data:
+        txt = self.input.text.upper()
+        self.input.text = ""
 
-            row = Card(h=50)
-            line = BoxLayout(spacing=dp(5))
+        data = re.findall(r'(\d{1,2}:\d{2})\s*([BS])', txt)
 
-            line.add_widget(Label(text=jam, size_hint_x=.3))
-            line.add_widget(Label(text=arah, size_hint_x=.2))
+        for i, (jam, arah) in enumerate(data):
 
-            kotak = Button(text="", size_hint_x=.15, background_normal="")
+            row_id = f"{jam}-{i}"
+            self.row_state[row_id] = "ON"
 
-            kotak.background_color = (0,1,0,1) if arah == "B" else (1,0,0,1)
+            row = Card(h=28)
+
+            line = BoxLayout(
+                spacing=dp(2),
+                padding=dp(2)
+            )
+
+            # ================= JAM =================
+            line.add_widget(
+                Label(
+                    text=jam,
+                    size_hint_x=.3,
+                    font_size=dp(9)
+                )
+            )
+
+            # ================= ARAH =================
+            line.add_widget(
+                Label(
+                    text=arah,
+                    size_hint_x=.15,
+                    font_size=dp(9)
+                )
+            )
+
+            # ================= COLOR BOX =================
+            kotak = Button(
+                text="",
+                size_hint_x=.1,
+                background_normal=""
+            )
+
+            kotak.background_color = (0, 1, 0, 1) if arah == "B" else (1, 0, 0, 1)
 
             line.add_widget(kotak)
 
-            win = Button(text="WIN", size_hint_x=.2)
-            loss = Button(text="LOSS", size_hint_x=.2)
+            # ================= TOGGLE ON -> WIN -> LOSS =================
+            btn = Button(
+                text="ON",
+                size_hint_x=.25,
+                font_size=dp(9),
+                background_normal=""
+            )
 
-            win.bind(on_press=lambda x: self.status(x, "✅"))
-            loss.bind(on_press=lambda x: self.status(x, "❌"))
+            def cycle(b, rid=row_id):
 
-            line.add_widget(win)
-            line.add_widget(loss)
+                state = self.row_state[rid]
+
+                if state == "ON":
+                    self.row_state[rid] = "WIN"
+                    b.text = "WIN"
+                    b.background_color = (0, 1, 0, 1)
+
+                elif state == "WIN":
+                    self.row_state[rid] = "LOSS"
+                    b.text = "LOSS"
+                    b.background_color = (1, 0, 0, 1)
+
+                else:
+                    self.row_state[rid] = "ON"
+                    b.text = "ON"
+                    b.background_color = (0.2, 0.2, 0.2, 1)
+
+            btn.bind(on_press=cycle)
+
+            line.add_widget(btn)
+
+            # ================= DELETE ROW =================
+            delete = Button(
+                text="X",
+                size_hint_x=.1,
+                font_size=dp(9)
+            )
+
+            def remove_row(widget_row=row):
+                self.listbox.remove_widget(widget_row)
+
+            delete.bind(on_press=remove_row)
+
+            line.add_widget(delete)
 
             row.add_widget(line)
             self.listbox.add_widget(row)
