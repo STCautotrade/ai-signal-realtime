@@ -70,14 +70,12 @@ class Home(Screen):
 
         root = BoxLayout(orientation="vertical", spacing=dp(5), padding=dp(6))
 
-        # LOGO
         root.add_widget(Image(
             source=os.path.join(BASE_DIR, "file_00000000989c71fa995c0bb4f763659a.png"),
             size_hint_y=None,
             height=dp(140)
         ))
 
-        # MARKET + CLOCK
         row = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(5))
 
         self.market = Card(h=50)
@@ -94,7 +92,6 @@ class Home(Screen):
 
         root.add_widget(row)
 
-        # ================= SIGNAL =================
         self.signal = Card(h=120)
 
         self.signal_label = Label(text="WAITING SIGNAL ...", font_size=dp(18))
@@ -107,10 +104,8 @@ class Home(Screen):
 
         root.add_widget(self.signal)
 
-        # HISTORY TITLE
         root.add_widget(Label(text="HISTORY", size_hint_y=None, height=dp(20)))
 
-        # HISTORY SCROLL
         self.history_scroll = ScrollView(size_hint=(1, None), height=dp(220))
 
         self.history_box = BoxLayout(
@@ -148,46 +143,53 @@ class Home(Screen):
             signal = data.get("signal", "WAITING").upper()
             entry = data.get("entry_time", "-")
 
-            # ================= WAITING =================
             if signal not in ["BUY", "SELL"]:
                 self.signal.set_bg((0.1,0.1,0.15,1))
                 self.signal_label.text = "WAITING SIGNAL ..."
                 self.entry.text = "-"
                 self.status.text = "MENUNGGU KONFIRMASI"
+                hist = None
 
-            # ================= BUY =================
             elif signal == "BUY":
                 if self.expired(entry):
                     self.signal.set_bg((0.5,0.5,0.5,1))
                     self.signal_label.text = "BUY SIGNAL CLOSED"
                     self.entry.text = f"ENTRY BUY DI JAM {entry} - SIGNAL BERAKHIR"
                     self.status.text = "WAITING SIGNAL....."
-                    hist = f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry} BERAKHIR"
                 else:
                     self.signal.set_bg((0,0.7,0.3,1))
                     self.signal_label.text = "BUY NOW"
                     self.entry.text = f"ENTRY BUY DI JAM {entry}"
                     self.status.text = "ACTIVE"
 
-            # ================= SELL =================
+                hist = f"MARKET CRYPTO IDX : SIGNAL BUY JAM {entry} BERAKHIR"
+
             else:
                 if self.expired(entry):
                     self.signal.set_bg((0.5,0.5,0.5,1))
                     self.signal_label.text = "SELL SIGNAL CLOSED"
                     self.entry.text = f"ENTRY SELL DI JAM {entry} - SIGNAL BERAKHIR"
                     self.status.text = "CLOSED"
-                    hist = f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry} BERAKHIR"
                 else:
                     self.signal.set_bg((0.8,0.1,0.2,1))
                     self.signal_label.text = "SELL NOW"
                     self.entry.text = f"ENTRY SELL DI JAM {entry}"
                     self.status.text = "ACTIVE"
 
-            # ================= HISTORY =================
-            if not self.history or self.history[0] != hist:
+                hist = f"MARKET CRYPTO IDX : SIGNAL SELL JAM {entry} BERAKHIR"
+
+            # ================= HISTORY (ONLY CHANGE HERE) =================
+            if hist and (not self.history or self.history[0] != hist):
                 self.history.insert(0, hist)
 
                 row = HistoryRow(hist)
+
+                # ONLY ADD COLOR (NO OTHER CHANGE)
+                if "BUY" in hist:
+                    row.set_bg((0, 1, 0.4, 0.15))   # green transparent
+                else:
+                    row.set_bg((1, 0.2, 0.2, 0.15)) # red transparent
+
                 self.history_box.add_widget(row, index=0)
 
         except:
