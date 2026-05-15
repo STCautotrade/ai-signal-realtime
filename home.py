@@ -95,26 +95,28 @@ class Home(Screen):
 
         self.saved = ""
 
-        # ✅ FIX ROOT (INI YANG SEBELUMNYA ERROR)
+        # =========================
+        # ROOT FIX STABIL (PENTING)
+        # =========================
         root = BoxLayout(
             orientation="vertical",
             spacing=dp(6),
-            padding=[dp(6), dp(6), dp(6), dp(70)]
+            padding=[dp(6), dp(6), dp(6), dp(140)]
         )
+        root.size_hint_y = 1
 
         self.add_widget(root)
 
         # =========================
-        # PNG HEADER
+        # HEADER PNG
         # =========================
         root.add_widget(
             Image(
-                source=os.path.join(
-                    BASE_DIR,
-                    "IMG_20260515_104812.png"
-                ),
+                source=os.path.join(BASE_DIR, "IMG_20260515_104812.png"),
                 size_hint_y=None,
-                height=dp(90)
+                height=dp(90),
+                allow_stretch=True,
+                keep_ratio=True
             )
         )
 
@@ -169,7 +171,7 @@ class Home(Screen):
         root.add_widget(timer)
 
         # =========================
-        # HISTORY
+        # HISTORY TITLE
         # =========================
         root.add_widget(
             Label(
@@ -179,9 +181,11 @@ class Home(Screen):
             )
         )
 
+        # =========================
+        # SCROLL FIX STABIL
+        # =========================
         scroll = ScrollView(
-            size_hint_y=None,
-            height=dp(300)
+            size_hint_y=1
         )
 
         self.history_box = BoxLayout(
