@@ -22,7 +22,7 @@ class Martingale(Screen):
         self.add_widget(self.root)
 
         # ======================
-        # INPUT AREA
+        # INPUT + ENTER (AWAL ATAS)
         # ======================
         self.input = TextInput(
             hint_text="PASTE SIGNAL VIP",
@@ -39,14 +39,21 @@ class Martingale(Screen):
             color=(0, 0, 0, 1)
         )
 
+        self.enter_btn.bind(on_press=self.process_signal)
+
+        # ======================
+        # JUDUL
+        # ======================
         self.title = Label(
             text="WAITING SIGNAL...",
             size_hint_y=None,
             height=dp(45),
-            font_size=dp(16),
             bold=True
         )
 
+        # ======================
+        # HAPUS ALL
+        # ======================
         self.clear_btn = Button(
             text="HAPUS ALL",
             size_hint_y=None,
@@ -56,47 +63,49 @@ class Martingale(Screen):
             color=(1, 1, 1, 1)
         )
 
-        self.enter_btn.bind(on_press=self.process_signal)
         self.clear_btn.bind(on_press=self.reset_all)
 
-        self.root.add_widget(self.input)
-        self.root.add_widget(self.enter_btn)
-        self.root.add_widget(self.title)
-        self.root.add_widget(self.clear_btn)
-
         # ======================
-        # SCROLL AREA
+        # SCROLL DATA
         # ======================
         self.scroll = ScrollView()
 
         self.box = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            spacing=dp(8),
-            padding=(0, dp(6))
+            spacing=dp(8)
         )
         self.box.bind(minimum_height=self.box.setter("height"))
 
         self.scroll.add_widget(self.box)
+
+        # ======================
+        # ADD ORDER (AWAL)
+        # ======================
+        self.root.add_widget(self.input)
+        self.root.add_widget(self.enter_btn)
+        self.root.add_widget(self.title)
+        self.root.add_widget(self.clear_btn)
         self.root.add_widget(self.scroll)
 
     # ======================
-    # HIDE INPUT UI (FIXED)
+    # MOVE INPUT KE BAWAH
     # ======================
-    def hide_input_ui(self):
-        self.input.disabled = True
-        self.enter_btn.disabled = True
-        self.clear_btn.disabled = True
+    def move_input_to_bottom(self):
+
+        self.root.remove_widget(self.input)
+        self.root.remove_widget(self.enter_btn)
+
+        self.root.add_widget(self.input)
+        self.root.add_widget(self.enter_btn)
 
     # ======================
-    # PROCESS INPUT
+    # PROCESS SIGNAL
     # ======================
     def process_signal(self, instance):
 
         raw = self.input.text.upper().strip()
         self.input.text = ""
-
-        self.hide_input_ui()
 
         self.title.text = "SIGNAL VIP STC | " + datetime.now().strftime("%d %B %Y")
 
@@ -113,6 +122,9 @@ class Martingale(Screen):
                 i += 2
             else:
                 i += 1
+
+        # 🔥 PINDAHKAN INPUT KE BAWAH SETELAH INPUT
+        self.move_input_to_bottom()
 
     # ======================
     # ADD ROW
@@ -144,26 +156,10 @@ class Martingale(Screen):
 
         row.bind(pos=update_line, size=update_line)
 
-        row.add_widget(Label(
-            text=time,
-            bold=True,
-            font_size=dp(14),
-            size_hint_x=0.30,
-            color=(1, 1, 1, 1)
-        ))
+        row.add_widget(Label(text=time, size_hint_x=0.30))
+        row.add_widget(Label(text=signal, size_hint_x=0.15))
 
-        row.add_widget(Label(
-            text=signal,
-            bold=True,
-            font_size=dp(16),
-            size_hint_x=0.15,
-            color=(1, 1, 1, 1)
-        ))
-
-        color_box = BoxLayout(
-            size_hint_x=0.18,
-            padding=dp(2)
-        )
+        color_box = BoxLayout(size_hint_x=0.18)
 
         def draw(inst, *args):
             inst.canvas.before.clear()
@@ -178,67 +174,23 @@ class Martingale(Screen):
 
         row.add_widget(color_box)
 
-        action_box = BoxLayout(
-            size_hint_x=0.37,
-            spacing=dp(3)
-        )
-
-        btn = Button(
-            text="ON",
-            background_normal="",
-            background_color=(0, 0.8, 1, 1),
-            color=(0, 0, 0, 1),
-            font_size=dp(12)
-        )
-
-        def cycle(inst):
-            if inst.text == "ON":
-                inst.text = "K1"
-            elif inst.text == "K1":
-                inst.text = "K2"
-            elif inst.text == "K2":
-                inst.text = "K3"
-            elif inst.text == "K3":
-                inst.text = "WIN"
-            elif inst.text == "WIN":
-                inst.text = "LOSS"
-            else:
-                inst.text = "ON"
-
-        btn.bind(on_press=cycle)
-
-        manual = TextInput(
-            text="",
-            multiline=False,
-            font_size=dp(12),
-            background_color=(0.2, 0.2, 0.2, 1),
-            foreground_color=(1, 1, 1, 1)
-        )
-
-        action_box.add_widget(btn)
-        action_box.add_widget(manual)
-
-        row.add_widget(action_box)
-
         self.box.add_widget(row)
 
     # ======================
-    # RESET ALL (FIXED)
+    # RESET ALL (BALIK KE AWAL)
     # ======================
     def reset_all(self, instance):
 
         self.box.clear_widgets()
 
-        self.input.disabled = False
-        self.enter_btn.disabled = False
-        self.clear_btn.disabled = False
+        # 🔥 BALIKIN INPUT KE ATAS
+        self.root.clear_widgets()
 
-        self.input.height = dp(120)
-        self.enter_btn.height = dp(55)
-        self.clear_btn.height = dp(55)
+        self.root.add_widget(self.input)
+        self.root.add_widget(self.enter_btn)
+        self.root.add_widget(self.title)
+        self.root.add_widget(self.clear_btn)
+        self.root.add_widget(self.scroll)
 
         self.input.text = ""
         self.title.text = "WAITING SIGNAL..."
-
-        # force refresh layout biar langsung respon
-        self.root.do_layout()
