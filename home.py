@@ -1,269 +1,319 @@
-from kivy.uix.screenmanager import Screen
+import requests
+from datetime import datetime, timedelta
+import os
+
+from kivy.clock import Clock
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.uix.image import Image
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.image import Image
+from kivy.uix.screenmanager import Screen
 from kivy.graphics import Color, RoundedRectangle, Line
-from kivy.clock import Clock
-from time import strftime
 
-from api import fetch_signal
+DATA_URL = "http://157.10.252.46:5000/signal"
+BASE_DIR = os.path.dirname(__file__)
 
+
+# =========================
+# CARD NEON
+# =========================
 
 class Card(BoxLayout):
 
     def __init__(
         self,
-        bg=(0.05,0.08,0.12,.95),
-        line=(0,1,1,1),
+        bg=(0.08,0.08,0.12,1),
+        border=(0.2,0.7,1,1),
+        h=90,
         **kwargs
     ):
 
         super().__init__(**kwargs)
 
+        self.orientation="vertical"
+
+        self.padding=dp(6)
+        self.spacing=dp(4)
+
+        self.size_hint_y=None
+        self.height=dp(h)
+
         with self.canvas.before:
 
-            Color(*bg)
-            self.bg = RoundedRectangle(
-                radius=[18]
+            self.bg=Color(*bg)
+
+            self.rect=RoundedRectangle(
+                radius=[16]
             )
 
-            Color(*line)
-            self.border = Line(
-                rounded_rectangle=(0,0,0,0,18),
+        with self.canvas.after:
+
+            self.border=Color(*border)
+
+            self.line=Line(
+                rounded_rectangle=(0,0,0,0,16),
                 width=1.2
             )
 
-        self.bind(pos=self.update_ui)
-        self.bind(size=self.update_ui)
+        self.bind(
+            pos=self.update,
+            size=self.update
+        )
 
-    def update_ui(self,*a):
 
-        self.bg.pos=self.pos
-        self.bg.size=self.size
+    def update(self,*a):
 
-        self.border.rounded_rectangle=(
+        self.rect.pos=self.pos
+        self.rect.size=self.size
+
+        self.line.rounded_rectangle=(
             self.x,
             self.y,
             self.width,
             self.height,
-            18
+            16
         )
 
 
+    def set_bg(self,c):
+
+        self.bg.rgba=c
+
+
+
+# =========================
+# HISTORY ROW
+# =========================
+
+class HistoryRow(Card):
+
+    def __init__(self,text,color,**kw):
+
+        super().__init__(
+            h=38,
+            bg=(0.08,0.08,0.12,1)
+        )
+
+        lbl=Label(
+            text=text,
+            font_size=dp(10),
+            color=color
+        )
+
+        self.add_widget(lbl)
+
+
+
+# =========================
+# HOME
+# =========================
+
 class Home(Screen):
 
-    def __init__(self, **kw):
+    def __init__(self,**kw):
+
         super().__init__(**kw)
 
         self.history=[]
+        self.expiry_time=None
+        self.last_signal=""
 
         root=BoxLayout(
             orientation="vertical",
-            spacing=8,
-            padding=8
+            spacing=dp(6),
+            padding=dp(6)
         )
 
         self.add_widget(root)
 
-        # ======================
-        # TITLE PNG
-        # ======================
+        # PNG
 
         root.add_widget(
+
             Image(
-                source="file_00000000989c71fa995c0bb4f763659a.png",
+
+                source=os.path.join(
+                    BASE_DIR,
+                    "file_00000000989c71fa995c0bb4f763659a.png"
+                ),
+
                 size_hint_y=None,
-                height=70
+
+                height=dp(100)
+
             )
+
         )
 
 
-        # ======================
         # MARKET + JAM
-        # ======================
 
-        top=BoxLayout(
-            spacing=6,
+        row=BoxLayout(
+
             size_hint_y=None,
-            height=75
+
+            height=dp(60),
+
+            spacing=dp(5)
+
         )
 
 
-        market_card=Card(
-            orientation="vertical"
-        )
+        self.market=Card(h=55)
 
-        market_card.add_widget(
+        self.market.add_widget(
             Label(
                 text="MARKET"
             )
         )
 
-        self.market=Label(
-            text="CRYPTO IDX",
-            font_size=16,
-            bold=True
+        self.market_label=Label(
+            text="CRYPTO IDX"
         )
 
-        market_card.add_widget(
-            self.market
+        self.market.add_widget(
+            self.market_label
         )
 
 
-        jam_card=Card(
-            orientation="vertical"
-        )
 
-        jam_card.add_widget(
+        self.clock=Card(h=55)
+
+        self.clock.add_widget(
             Label(
                 text="JAM REALTIME HP WIB"
             )
         )
 
-        self.clock=Label(
-            text="00:00:00",
-            font_size=16,
-            bold=True
+        self.clock_label=Label(
+            text="00:00:00"
         )
 
-        jam_card.add_widget(
+        self.clock.add_widget(
+            self.clock_label
+        )
+
+
+
+        row.add_widget(
+            self.market
+        )
+
+        row.add_widget(
             self.clock
         )
 
+        root.add_widget(row)
 
-        top.add_widget(
-            market_card
+
+        # SIGNAL
+
+        self.signal=Card(
+            h=145
         )
 
-        top.add_widget(
-            jam_card
-        )
 
-        root.add_widget(top)
+        self.signal_title=Label(
 
+            text="SIGNAL AREA ( KONFIGURATION SIGNAL )",
 
-
-        # ======================
-        # SIGNAL CARD
-        # ======================
-
-        self.signal_card=Card(
-            orientation="vertical",
-            size_hint_y=None,
-            height=170,
-            spacing=5,
-            padding=8
-        )
-
-        self.signal_card.add_widget(
-
-            Label(
-                text="SIGNAL AREA ( KONFIGURATION SIGNAL )",
-                size_hint_y=None,
-                height=25,
-                bold=True
-            )
+            bold=True
 
         )
 
 
-
-        self.signal=Label(
+        self.entry=Label(
 
             text="SIGNAL: ENTRY BUY DI JAM ..../ ENTRY SELL DI JAM .... / SIGNAL BUY BERAKHIR / SIGNAL SELL BERAKHIR",
-
-            text_size=(320,None),
 
             halign="center"
 
         )
 
+        self.entry.bind(
+            width=lambda s,w:
+            setattr(
+                s,
+                "text_size",
+                (w-20,None)
+            )
+        )
+
 
         self.status=Label(
-
-            text="STATUS: ACTIVE/EXVIRED",
-
-            size_hint_y=None,
-
-            height=30
-
+            text="STATUS: ACTIVE/EXVIRED"
         )
 
 
-        self.signal_card.add_widget(
-            self.signal
+        self.signal.add_widget(
+            self.signal_title
         )
 
-        self.signal_card.add_widget(
+        self.signal.add_widget(
+            self.entry
+        )
+
+        self.signal.add_widget(
             self.status
         )
 
         root.add_widget(
-            self.signal_card
+            self.signal
         )
 
 
-        # ======================
         # TIMER
-        # ======================
 
-        timer=Card(
-            size_hint_y=None,
-            height=55
+        self.expire_card=Card(
+            h=60
         )
 
-
-        self.timer=Label(
+        self.expire_label=Label(
             text="TIMER: 55s / MENUNGGU SIGNAL"
         )
 
-        timer.add_widget(
-            self.timer
+        self.expire_card.add_widget(
+            self.expire_label
         )
 
         root.add_widget(
-            timer
+            self.expire_card
         )
 
 
-
-        # ======================
-        # HISTORY HEADER
-        # ======================
+        # HISTORY
 
         root.add_widget(
 
             Label(
                 text="HISTORY HEADER",
                 size_hint_y=None,
-                height=25
+                height=dp(20)
             )
 
         )
 
 
-        scroll=ScrollView()
-
+        scroll=ScrollView(
+            size_hint=(1,1)
+        )
 
         self.history_box=BoxLayout(
 
             orientation="vertical",
 
-            spacing=6,
+            spacing=dp(4),
 
             size_hint_y=None
 
         )
 
-
         self.history_box.bind(
-
             minimum_height=
             self.history_box.setter(
                 "height"
             )
-
         )
 
 
@@ -277,145 +327,161 @@ class Home(Screen):
 
 
         Clock.schedule_interval(
-            self.update_data,
+            self.load,
             2
         )
 
         Clock.schedule_interval(
-            self.update_clock,
+            self.clock_update,
+            1
+        )
+
+        Clock.schedule_interval(
+            self.update_expiry,
             1
         )
 
 
-    # ======================
-    # JAM HP
-    # ======================
+    def clock_update(self,dt):
 
-    def update_clock(self,dt):
-
-        self.clock.text=(
-            strftime("%H:%M:%S")
+        self.clock_label.text=(
+            datetime.now().strftime(
+                "%H:%M:%S WIB"
+            )
         )
 
 
-    # ======================
-    # API
-    # ======================
+    def update_expiry(self,dt):
 
-    def update_data(self,dt):
+        if not self.expiry_time:
 
-        data=fetch_signal()
-
-        signal=data.get(
-            "signal",
-            "-"
-        )
-
-        entry=data.get(
-            "entry_time",
-            "-"
-        )
-
-        market=data.get(
-            "market",
-            "CRYPTO IDX"
-        )
-
-
-        self.market.text=(
-            market.upper()
-        )
-
-
-        if signal=="BUY":
-
-            self.signal.text=(
-                f"SIGNAL: ENTRY BUY DI JAM {entry} / SIGNAL BUY BERAKHIR"
+            self.expire_label.text=(
+                "TIMER: MENUNGGU SIGNAL"
             )
 
-            self.status.text=(
-                "STATUS: ACTIVE"
-            )
-
-            self.signal.color=(
-                0,1,0,1
-            )
-
-
-        elif signal=="SELL":
-
-            self.signal.text=(
-                f"SIGNAL: ENTRY SELL DI JAM {entry} / SIGNAL SELL BERAKHIR"
-            )
-
-            self.status.text=(
-                "STATUS: ACTIVE"
-            )
-
-            self.signal.color=(
-                1,0,0,1
-            )
-
-
-        else:
-
-            self.status.text=(
-                "STATUS: EXVIRED"
-            )
-
-
-        txt=f"{signal} | {entry} | EXPIRED"
-
-
-        if txt in self.history:
             return
 
 
-        self.history.insert(
-            0,
-            txt
+        s=int(
+            (
+                self.expiry_time-
+                datetime.now()
+            ).total_seconds()
         )
 
 
-        row=Card(
+        if s<0:
+            s=0
 
-            size_hint_y=None,
 
-            height=42
+        self.expire_label.text=(
+            f"TIMER: {s}s"
         )
 
 
-        lbl=Label(
-            text=txt
-        )
+    def load(self,dt):
+
+        try:
+
+            data=requests.get(
+                DATA_URL,
+                timeout=5
+            ).json()
 
 
-        if signal=="BUY":
+            signal=data.get(
+                "signal",
+                "WAITING"
+            ).upper()
 
-            lbl.color=(
-                0,1,0,1
+            entry=data.get(
+                "entry_time",
+                "-"
+            )
+
+            market=data.get(
+                "market",
+                "CRYPTO IDX"
             )
 
 
-        elif signal=="SELL":
-
-            lbl.color=(
-                1,0,0,1
+            self.market_label.text=(
+                market.upper()
             )
 
 
-        row.add_widget(
-            lbl
-        )
+            if signal=="BUY":
+
+                self.signal.set_bg(
+                    (0,0.5,0,0.35)
+                )
+
+                self.entry.text=(
+                    f"SIGNAL: ENTRY BUY DI JAM {entry} / SIGNAL BUY BERAKHIR"
+                )
+
+                self.status.text=(
+                    "STATUS: ACTIVE"
+                )
+
+                color=(0,1,0,1)
 
 
-        self.history_box.add_widget(
-            row
-        )
+            elif signal=="SELL":
+
+                self.signal.set_bg(
+                    (0.5,0,0,0.35)
+                )
+
+                self.entry.text=(
+                    f"SIGNAL: ENTRY SELL DI JAM {entry} / SIGNAL SELL BERAKHIR"
+                )
+
+                self.status.text=(
+                    "STATUS: ACTIVE"
+                )
+
+                color=(1,0,0,1)
+
+            else:
+
+                self.signal.set_bg(
+                    (0.08,0.08,0.12,1)
+                )
+
+                self.entry.text=(
+                    "SIGNAL EXPIRED"
+                )
+
+                self.status.text=(
+                    "STATUS: EXVIRED"
+                )
+
+                color=(1,1,1,1)
 
 
-        if len(
-            self.history
-        )>100:
+            hist=f"{signal} | JAM {entry} | EXPIRED"
 
-            self.history.pop()
+
+            if hist not in self.history:
+
+                self.history.insert(
+                    0,
+                    hist
+                )
+
+                self.history_box.add_widget(
+
+                    HistoryRow(
+                        hist,
+                        color
+                    ),
+
+                    index=0
+                )
+
+
+        except:
+
+            self.entry.text="OFFLINE"
+            self.status.text="SERVER ERROR"
