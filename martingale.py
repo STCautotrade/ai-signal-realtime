@@ -55,7 +55,7 @@ class Martingale(Screen):
         self.root.add_widget(self.clear_btn)
 
         # ======================
-        # TITLE (akan berubah saat enter)
+        # TITLE
         # ======================
         self.title = Label(
             text="WAITING SIGNAL...",
@@ -73,8 +73,8 @@ class Martingale(Screen):
 
         header.add_widget(Label(text="TIME"))
         header.add_widget(Label(text="B/S"))
-        header.add_widget(Label(text="MARK"))
-        header.add_widget(Label(text="STEP"))
+        header.add_widget(Label(text="COLOR"))
+        header.add_widget(Label(text="ACTION"))
 
         self.root.add_widget(header)
 
@@ -94,7 +94,7 @@ class Martingale(Screen):
         self.root.add_widget(self.scroll)
 
     # ======================
-    # PARSE INPUT (FIXED)
+    # PROCESS INPUT
     # ======================
     def process_signal(self, instance):
 
@@ -111,17 +111,17 @@ class Martingale(Screen):
         i = 0
         while i < len(tokens) - 1:
 
-            t = tokens[i]
+            time = tokens[i]
             sig = tokens[i + 1]
 
-            if ":" in t and sig in ["B", "S"]:
-                self.add_row(t, sig)
+            if ":" in time and sig in ["B", "S"]:
+                self.add_row(time, sig)
                 i += 2
             else:
                 i += 1
 
     # ======================
-    # ROW TABLE (STABIL DI ANDROID)
+    # ADD ROW (FIX CLEAN UI)
     # ======================
     def add_row(self, time, signal):
 
@@ -130,13 +130,12 @@ class Martingale(Screen):
             height=dp(35)
         )
 
-        mark = "🟩" if signal == "B" else "🟥"
-
+        # BUTTON ON / K1 / K2 / WIN / LOSS
         btn = Button(
             text="ON",
             background_normal="",
-            background_color=(0, 0.5, 1, 1),
-            color=(0, 0, 0, 1)
+            background_color=(1, 1, 1, 1),  # putih
+            color=(0, 0, 0, 1)              # hitam
         )
 
         def cycle(inst):
@@ -161,11 +160,29 @@ class Martingale(Screen):
         btn.bind(on_press=cycle)
 
         # ======================
-        # FIX WIDTH BIAR TIDAK BERANTAKAN
+        # FIX COLUMN WIDTH BIAR TIDAK BERANTAKAN
         # ======================
-        row.add_widget(Label(text=time, size_hint_x=0.25))
-        row.add_widget(Label(text=signal, size_hint_x=0.15))
-        row.add_widget(Label(text=mark, size_hint_x=0.15))
+
+        # TIME
+        row.add_widget(Label(
+            text=time,
+            size_hint_x=0.25
+        ))
+
+        # B / S (WARNA KIVY, BUKAN EMOJI)
+        row.add_widget(Label(
+            text=signal,
+            size_hint_x=0.15,
+            color=(0, 1, 0, 1) if signal == "B" else (1, 0, 0, 1)
+        ))
+
+        # COLOR INFO (TEXT SAJA, TANPA STICKER)
+        row.add_widget(Label(
+            text="GREEN" if signal == "B" else "RED",
+            size_hint_x=0.2
+        ))
+
+        # BUTTON
         row.add_widget(btn)
 
         self.box.add_widget(row)
