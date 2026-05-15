@@ -16,8 +16,8 @@ class Martingale(Screen):
 
         self.root = BoxLayout(
             orientation="vertical",
-            padding=dp(6),
-            spacing=dp(6)
+            padding=dp(8),
+            spacing=dp(8)
         )
         self.add_widget(self.root)
 
@@ -39,6 +39,14 @@ class Martingale(Screen):
             color=(0, 0, 0, 1)
         )
 
+        self.title = Label(
+            text="WAITING SIGNAL...",
+            size_hint_y=None,
+            height=dp(45),
+            font_size=dp(16),
+            bold=True
+        )
+
         self.clear_btn = Button(
             text="HAPUS ALL",
             size_hint_y=None,
@@ -53,19 +61,8 @@ class Martingale(Screen):
 
         self.root.add_widget(self.input)
         self.root.add_widget(self.enter_btn)
-        self.root.add_widget(self.clear_btn)
-
-        # ======================
-        # TITLE
-        # ======================
-        self.title = Label(
-            text="WAITING SIGNAL...",
-            size_hint_y=None,
-            height=dp(45),
-            font_size=dp(16),
-            bold=True
-        )
         self.root.add_widget(self.title)
+        self.root.add_widget(self.clear_btn)
 
         # ======================
         # SCROLL AREA
@@ -75,7 +72,8 @@ class Martingale(Screen):
         self.box = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            spacing=dp(4)
+            spacing=dp(8),
+            padding=(0, dp(6))
         )
         self.box.bind(minimum_height=self.box.setter("height"))
 
@@ -83,7 +81,7 @@ class Martingale(Screen):
         self.root.add_widget(self.scroll)
 
     # ======================
-    # HIDE INPUT UI (FIX UTAMA)
+    # HIDE INPUT UI
     # ======================
     def hide_input_ui(self):
         self.input.height = 0
@@ -98,7 +96,6 @@ class Martingale(Screen):
         raw = self.input.text.upper().strip()
         self.input.text = ""
 
-        # ❗ HILANGKAN INPUT TOTAL
         self.hide_input_ui()
 
         self.title.text = "SIGNAL VIP STC | " + datetime.now().strftime("%d %B %Y")
@@ -118,14 +115,15 @@ class Martingale(Screen):
                 i += 1
 
     # ======================
-    # ADD ROW (NEON FIX)
+    # ADD ROW (UI FIX ONLY)
     # ======================
     def add_row(self, time, signal):
 
         row = BoxLayout(
             size_hint_y=None,
-            height=dp(42),
-            spacing=dp(5)
+            height=dp(48),
+            spacing=dp(6),
+            padding=(dp(4), dp(4))
         )
 
         # NEON BORDER
@@ -133,7 +131,7 @@ class Martingale(Screen):
             Color(0, 0.8, 1, 1)
             line = Line(
                 rounded_rectangle=(0, 0, 0, 0, dp(8)),
-                width=1.3
+                width=1.2
             )
 
         def update_line(inst, *args):
@@ -165,8 +163,11 @@ class Martingale(Screen):
             color=(1, 1, 1, 1)
         ))
 
-        # COLOR BOX
-        color_box = BoxLayout(size_hint_x=0.20)
+        # COLOR BOX (FIX SIZE BIAR TIDAK GEDE)
+        color_box = BoxLayout(
+            size_hint_x=0.18,
+            padding=dp(2)
+        )
 
         def draw(inst, *args):
             inst.canvas.before.clear()
@@ -181,9 +182,9 @@ class Martingale(Screen):
 
         row.add_widget(color_box)
 
-        # ACTION (BUTTON + INPUT)
+        # ACTION BOX
         action_box = BoxLayout(
-            size_hint_x=0.35,
+            size_hint_x=0.37,
             spacing=dp(3)
         )
 
@@ -227,13 +228,12 @@ class Martingale(Screen):
         self.box.add_widget(row)
 
     # ======================
-    # RESET ALL (SHOW INPUT AGAIN)
+    # RESET ALL
     # ======================
     def reset_all(self, instance):
 
         self.box.clear_widgets()
 
-        # tampilkan lagi input
         self.input.height = dp(120)
         self.enter_btn.height = dp(55)
         self.clear_btn.height = dp(55)
