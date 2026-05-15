@@ -5,6 +5,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
+from kivy.graphics import Color, Rectangle, Line
 from datetime import datetime
 
 
@@ -60,38 +61,34 @@ class Martingale(Screen):
         self.title = Label(
             text="WAITING SIGNAL...",
             size_hint_y=None,
-            height=dp(40),
+            height=dp(45),
             font_size=dp(16),
             bold=True
         )
         self.root.add_widget(self.title)
 
         # ======================
-        # HEADER TABLE
-        # ======================
-        header = BoxLayout(size_hint_y=None, height=dp(35))
-
-        header.add_widget(Label(text="TIME"))
-        header.add_widget(Label(text="B/S"))
-        header.add_widget(Label(text="COLOR"))
-        header.add_widget(Label(text="ACTION"))
-
-        self.root.add_widget(header)
-
-        # ======================
-        # SCROLL TABLE
+        # SCROLL AREA
         # ======================
         self.scroll = ScrollView()
 
         self.box = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            spacing=dp(2)
+            spacing=dp(4)
         )
         self.box.bind(minimum_height=self.box.setter("height"))
 
         self.scroll.add_widget(self.box)
         self.root.add_widget(self.scroll)
+
+    # ======================
+    # HIDE INPUT UI (FIX UTAMA)
+    # ======================
+    def hide_input_ui(self):
+        self.input.height = 0
+        self.enter_btn.height = 0
+        self.clear_btn.height = 0
 
     # ======================
     # PROCESS INPUT
@@ -101,10 +98,10 @@ class Martingale(Screen):
         raw = self.input.text.upper().strip()
         self.input.text = ""
 
-        self.input.height = 0
-        self.enter_btn.height = 0
+        # ❗ HILANGKAN INPUT TOTAL
+        self.hide_input_ui()
 
-        self.title.text = "SIGNAL VIP STC | " + datetime.now().strftime("%d %b %Y")
+        self.title.text = "SIGNAL VIP STC | " + datetime.now().strftime("%d %B %Y")
 
         tokens = raw.split()
 
@@ -121,25 +118,84 @@ class Martingale(Screen):
                 i += 1
 
     # ======================
-    # ADD ROW (FIX CLEAN UI)
+    # ADD ROW (NEON FIX)
     # ======================
     def add_row(self, time, signal):
 
         row = BoxLayout(
             size_hint_y=None,
-            height=dp(35)
+            height=dp(42),
+            spacing=dp(5)
         )
 
-        # BUTTON ON / K1 / K2 / WIN / LOSS
+        # NEON BORDER
+        with row.canvas.after:
+            Color(0, 0.8, 1, 1)
+            line = Line(
+                rounded_rectangle=(0, 0, 0, 0, dp(8)),
+                width=1.3
+            )
+
+        def update_line(inst, *args):
+            line.rounded_rectangle = (
+                inst.x,
+                inst.y,
+                inst.width,
+                inst.height,
+                dp(8)
+            )
+
+        row.bind(pos=update_line, size=update_line)
+
+        # TIME
+        row.add_widget(Label(
+            text=time,
+            bold=True,
+            font_size=dp(14),
+            size_hint_x=0.30,
+            color=(1, 1, 1, 1)
+        ))
+
+        # B / S
+        row.add_widget(Label(
+            text=signal,
+            bold=True,
+            font_size=dp(16),
+            size_hint_x=0.15,
+            color=(1, 1, 1, 1)
+        ))
+
+        # COLOR BOX
+        color_box = BoxLayout(size_hint_x=0.20)
+
+        def draw(inst, *args):
+            inst.canvas.before.clear()
+            with inst.canvas.before:
+                if signal == "B":
+                    Color(0, 1, 0, 1)
+                else:
+                    Color(1, 0, 0, 1)
+                Rectangle(pos=inst.pos, size=inst.size)
+
+        color_box.bind(pos=draw, size=draw)
+
+        row.add_widget(color_box)
+
+        # ACTION (BUTTON + INPUT)
+        action_box = BoxLayout(
+            size_hint_x=0.35,
+            spacing=dp(3)
+        )
+
         btn = Button(
             text="ON",
             background_normal="",
-            background_color=(1, 1, 1, 1),  # putih
-            color=(0, 0, 0, 1)              # hitam
+            background_color=(0, 0.8, 1, 1),
+            color=(0, 0, 0, 1),
+            font_size=dp(12)
         )
 
         def cycle(inst):
-
             if inst.text == "ON":
                 inst.text = "K1"
             elif inst.text == "K1":
@@ -147,10 +203,6 @@ class Martingale(Screen):
             elif inst.text == "K2":
                 inst.text = "K3"
             elif inst.text == "K3":
-                inst.text = "K4"
-            elif inst.text == "K4":
-                inst.text = "K5"
-            elif inst.text == "K5":
                 inst.text = "WIN"
             elif inst.text == "WIN":
                 inst.text = "LOSS"
@@ -159,43 +211,32 @@ class Martingale(Screen):
 
         btn.bind(on_press=cycle)
 
-        # ======================
-        # FIX COLUMN WIDTH BIAR TIDAK BERANTAKAN
-        # ======================
+        manual = TextInput(
+            text="",
+            multiline=False,
+            font_size=dp(12),
+            background_color=(0.2, 0.2, 0.2, 1),
+            foreground_color=(1, 1, 1, 1)
+        )
 
-        # TIME
-        row.add_widget(Label(
-            text=time,
-            size_hint_x=0.25
-        ))
+        action_box.add_widget(btn)
+        action_box.add_widget(manual)
 
-        # B / S (WARNA KIVY, BUKAN EMOJI)
-        row.add_widget(Label(
-            text=signal,
-            size_hint_x=0.15,
-            color=(0, 1, 0, 1) if signal == "B" else (1, 0, 0, 1)
-        ))
-
-        # COLOR INFO (TEXT SAJA, TANPA STICKER)
-        row.add_widget(Label(
-            text="GREEN" if signal == "B" else "RED",
-            size_hint_x=0.2
-        ))
-
-        # BUTTON
-        row.add_widget(btn)
+        row.add_widget(action_box)
 
         self.box.add_widget(row)
 
     # ======================
-    # RESET
+    # RESET ALL (SHOW INPUT AGAIN)
     # ======================
     def reset_all(self, instance):
 
         self.box.clear_widgets()
 
+        # tampilkan lagi input
         self.input.height = dp(120)
         self.enter_btn.height = dp(55)
+        self.clear_btn.height = dp(55)
 
         self.input.text = ""
         self.title.text = "WAITING SIGNAL..."
