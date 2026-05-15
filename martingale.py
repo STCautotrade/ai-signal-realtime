@@ -14,6 +14,9 @@ class Martingale(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
 
+        # ================= MODE =================
+        self.input_mode = True
+
         self.root = BoxLayout(
             orientation="vertical",
             padding=dp(8),
@@ -51,7 +54,7 @@ class Martingale(Screen):
         self.enter_btn.bind(on_press=self.process_signal)
         self.clear_btn.bind(on_press=self.reset_all)
 
-        # ================= SCROLL DATA =================
+        # ================= SCROLL =================
         self.scroll = ScrollView()
 
         self.box = BoxLayout(
@@ -63,22 +66,29 @@ class Martingale(Screen):
 
         self.scroll.add_widget(self.box)
 
-        # ================= LAYOUT URUTAN =================
+        # ================= LAYOUT =================
         self.root.add_widget(self.input)
         self.root.add_widget(self.enter_btn)
         self.root.add_widget(self.title)
         self.root.add_widget(self.clear_btn)
         self.root.add_widget(self.scroll)
 
-    # ================= PROCESS INPUT =================
+    # ================= PROCESS =================
     def process_signal(self, instance):
 
         raw = self.input.text.upper().strip()
         self.input.text = ""
 
+        self.input_mode = False
+
+        # hide input & enter
+        self.input.height = 0
+        self.enter_btn.height = 0
+
         self.title.text = "SIGNAL VIP STC | " + datetime.now().strftime("%d %B %Y")
 
-        tokens = raw.split()
+        tokens = raw.replace("\n", " ").split()
+        tokens = [t for t in tokens if t.strip()]
 
         i = 0
         while i < len(tokens) - 1:
@@ -101,7 +111,6 @@ class Martingale(Screen):
             spacing=dp(6)
         )
 
-        # border neon
         with row.canvas.after:
             Color(0, 0.8, 1, 1)
             line = Line(
@@ -167,5 +176,12 @@ class Martingale(Screen):
     def reset_all(self, instance):
 
         self.box.clear_widgets()
+
+        self.input_mode = True
+
+        # show input again
+        self.input.height = dp(100)
+        self.enter_btn.height = dp(50)
+
         self.input.text = ""
         self.title.text = "WAITING SIGNAL..."
