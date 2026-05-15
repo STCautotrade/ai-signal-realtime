@@ -2,6 +2,7 @@ from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.metrics import dp
 
 from home import Home
 from martingale import Martingale
@@ -24,20 +25,34 @@ class MainApp(App):
         self.sm.current = "home"
 
         # ======================
-        # ROOT LAYOUT
+        # ROOT
         # ======================
         root = BoxLayout(orientation="vertical")
-
         root.add_widget(self.sm)
 
         # ======================
-        # BOTTOM NAV BAR
+        # NAV BAR (UPGRADE)
         # ======================
-        nav = BoxLayout(size_hint_y=None, height=60)
+        nav = BoxLayout(
+            size_hint_y=None,
+            height=dp(80),
+            spacing=dp(10),
+            padding=dp(10)
+        )
 
-        btn_home = Button(text="HOME")
-        btn_mart = Button(text="MART")
-        btn_trade = Button(text="TRADE")
+        def make_btn(text, color):
+            return Button(
+                text=text,
+                font_size=dp(16),
+                bold=True,
+                background_normal="",
+                background_color=color,
+                color=(0, 0, 0, 1)
+            )
+
+        btn_home = make_btn("HOME", (0, 0.9, 1, 1))
+        btn_mart = make_btn("MART", (0, 0.7, 1, 1))
+        btn_trade = make_btn("TRADE", (0, 0.5, 1, 1))
 
         btn_home.bind(on_press=lambda x: self.switch("home"))
         btn_mart.bind(on_press=lambda x: self.switch("mart"))
