@@ -5,6 +5,7 @@ from kivy.uix.image import Image
 from kivy.uix.scrollview import ScrollView
 from kivy.clock import Clock
 from datetime import datetime, timedelta
+from time import strftime
 
 from api import fetch_signal
 
@@ -21,7 +22,7 @@ class Home(Screen):
         self.add_widget(root)
 
         # =========================
-        # TITLE PNG
+        # TITLE IMAGE
         # =========================
         root.add_widget(
             Image(
@@ -32,10 +33,10 @@ class Home(Screen):
         )
 
         # =========================
-        # MARKET + JAM
+        # MARKET + JAM (FIX: MARKET VPS, JAM HP)
         # =========================
         self.market_label = Label(
-            text="MARKET | WIB",
+            text="MARKET LOADING...",
             size_hint_y=None,
             height=30,
             font_size=16
@@ -43,40 +44,51 @@ class Home(Screen):
         root.add_widget(self.market_label)
 
         # =========================
-        # SIGNAL CARD NEON
+        # SIGNAL AREA
         # =========================
         self.signal_label = Label(
-            text="SIGNAL: WAITING",
-            font_size=26,
+            text="SIGNAL: ENTRY BUY DI JAM ..../ ENTRY SELL DI JAM .... / SIGNAL BUY BERAKHIR / SIGNAL SELL BERAKHIR",
+            font_size=18,
             size_hint_y=None,
-            height=70
+            height=80
         )
 
         self.status_label = Label(
-            text="STATUS: -",
+            text="STATUS: ACTIVE/EXVIRED",
             size_hint_y=None,
             height=30
         )
 
+        self.card = BoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            height=120
+        )
+
+        self.card.add_widget(self.signal_label)
+        self.card.add_widget(self.status_label)
+
+        root.add_widget(self.card)
+
+        # =========================
+        # TIMER
+        # =========================
         self.timer_label = Label(
-            text="TIMER: WAITING",
+            text="TIMER: 55s / MENUNGGU SIGNAL",
             size_hint_y=None,
             height=30
         )
-
-        root.add_widget(self.signal_label)
-        root.add_widget(self.status_label)
         root.add_widget(self.timer_label)
 
         # =========================
-        # HISTORY HEADER (7 KOLOM)
+        # HISTORY HEADER
         # =========================
         header = BoxLayout(size_hint_y=None, height=30)
 
-        headers = ["SIGNAL", "TIME", "STATUS", "K1", "K2", "K3", "K4"]
+        headers = ["SIGNAL", "TIME", "STATUS"]
 
         for h in headers:
-            header.add_widget(Label(text=h, font_size=12))
+            header.add_widget(Label(text=h))
 
         root.add_widget(header)
 
@@ -111,69 +123,75 @@ class Home(Screen):
 
         signal = data.get("signal", "WAITING")
         entry = data.get("entry_time", "-")
+        market = data.get("market", "CRYPTO IDX")
 
         # =========================
-        # NEON COLOR SIGNAL
+        # MARKET + JAM HP REALTIME
+        # =========================
+        self.market_label.text = f"{market} | {strftime('%H:%M:%S')}"
+
+        # =========================
+        # SIGNAL DISPLAY (NO CHANGE TEXT)
         # =========================
         if signal == "BUY":
-            self.signal_label.text = "🟢 SIGNAL: BUY"
+            self.signal_label.text = "SIGNAL: ENTRY BUY DI JAM ..../ SIGNAL BUY BERAKHIR"
             self.signal_label.color = (0, 1, 0, 1)
 
         elif signal == "SELL":
-            self.signal_label.text = "🔴 SIGNAL: SELL"
+            self.signal_label.text = "SIGNAL: ENTRY SELL DI JAM ..../ SIGNAL SELL BERAKHIR"
             self.signal_label.color = (1, 0, 0, 1)
 
         else:
-            self.signal_label.text = "⚪ SIGNAL: WAITING"
+            self.signal_label.text = "SIGNAL: ENTRY BUY DI JAM ..../ ENTRY SELL DI JAM .... / SIGNAL BUY BERAKHIR / SIGNAL SELL BERAKHIR"
             self.signal_label.color = (1, 1, 1, 1)
 
-        self.status_label.text = "STATUS: ACTIVE"
+        # =========================
+        # STATUS
+        # =========================
+        if signal in ["BUY", "SELL"]:
+            self.status_label.text = "STATUS: ACTIVE"
+        else:
+            self.status_label.text = "STATUS: EXVIRED"
 
         # =========================
-        # TIMER 1 MENIT
+        # TIMER LOGIC
         # =========================
         if signal in ["BUY", "SELL"] and entry != "-":
             try:
                 h, m = map(int, entry.split(":"))
                 base = datetime.now().replace(hour=h, minute=m, second=0)
-                self.expiry_time = base + timedelta(minutes=1)
+                self.expiry_time = base + timedelta(seconds=55)
             except:
-                self.expiry_time = datetime.now() + timedelta(seconds=60)
+                self.expiry_time = datetime.now() + timedelta(seconds=55)
+        else:
+            self.expiry_time = None
 
         # =========================
-        # HISTORY ROW (7 KOLOM NEON)
+        # HISTORY (NO DUPLICATE)
         # =========================
-        k1, k2, k3, k4 = "-", "-", "-", "-"
+        row_data = [signal, entry, "ACTIVE" if self.expiry_time else "EXPIRED"]
 
-        row = BoxLayout(size_hint_y=None, height=28, spacing=2)
+        if self.history and self.history[0] == row_data:
+            return
 
-        row_data = [
-            signal,
-            entry,
-            "ACTIVE",
-            k1, k2, k3, k4
-        ]
+        self.history.insert(0, row_data)
 
-        for i, d in enumerate(row_data):
+        row = BoxLayout(size_hint_y=None, height=28)
 
-            lbl = Label(text=str(d), font_size=11)
+        for d in row_data:
 
-            # neon style simple
+            lbl = Label(text=str(d))
+
             if signal == "BUY":
                 lbl.color = (0, 1, 0, 1)
-
             elif signal == "SELL":
                 lbl.color = (1, 0, 0, 1)
-
             else:
-                lbl.color = (0.8, 0.8, 0.8, 1)
+                lbl.color = (1, 1, 1, 1)
 
             row.add_widget(lbl)
 
-        # prevent duplicate spam
-        if not self.history or self.history[0] != row_data:
-            self.history.insert(0, row_data)
-            self.history_box.add_widget(row)
+        self.history_box.add_widget(row)
 
     # =========================
     # TIMER
@@ -181,14 +199,14 @@ class Home(Screen):
     def update_timer(self, dt):
 
         if not self.expiry_time:
-            self.timer_label.text = "TIMER: WAITING SIGNAL"
+            self.timer_label.text = "TIMER: 55s / MENUNGGU SIGNAL"
             return
 
         remaining = int((self.expiry_time - datetime.now()).total_seconds())
 
         if remaining <= 0:
             self.timer_label.text = "TIMER: EXPIRED"
-            self.status_label.text = "STATUS: EXPIRED"
+            self.status_label.text = "STATUS: EXVIRED"
             self.expiry_time = None
         else:
-            self.timer_label.text = f"TIMER: {remaining}s"
+            self.timer_label.text = f"TIMER: {remaining}s / MENUNGGU SIGNAL"
