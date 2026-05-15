@@ -21,87 +21,56 @@ class Martingale(Screen):
         )
         self.add_widget(self.root)
 
-        # ======================
-        # INPUT + ENTER (AWAL ATAS)
-        # ======================
+        # ================= INPUT =================
         self.input = TextInput(
             hint_text="PASTE SIGNAL VIP",
             size_hint_y=None,
-            height=dp(120)
+            height=dp(100)
         )
 
         self.enter_btn = Button(
             text="ENTER SIGNAL",
             size_hint_y=None,
-            height=dp(55),
-            background_normal="",
-            background_color=(0, 0.8, 1, 1),
-            color=(0, 0, 0, 1)
+            height=dp(50),
+            background_color=(0, 0.8, 1, 1)
         )
 
-        self.enter_btn.bind(on_press=self.process_signal)
-
-        # ======================
-        # JUDUL
-        # ======================
         self.title = Label(
             text="WAITING SIGNAL...",
             size_hint_y=None,
-            height=dp(45),
-            bold=True
+            height=dp(40)
         )
 
-        # ======================
-        # HAPUS ALL
-        # ======================
         self.clear_btn = Button(
             text="HAPUS ALL",
             size_hint_y=None,
-            height=dp(55),
-            background_normal="",
-            background_color=(1, 0, 0, 1),
-            color=(1, 1, 1, 1)
+            height=dp(50),
+            background_color=(1, 0, 0, 1)
         )
 
+        self.enter_btn.bind(on_press=self.process_signal)
         self.clear_btn.bind(on_press=self.reset_all)
 
-        # ======================
-        # SCROLL DATA
-        # ======================
+        # ================= SCROLL DATA =================
         self.scroll = ScrollView()
 
         self.box = BoxLayout(
             orientation="vertical",
             size_hint_y=None,
-            spacing=dp(8)
+            spacing=dp(6)
         )
         self.box.bind(minimum_height=self.box.setter("height"))
 
         self.scroll.add_widget(self.box)
 
-        # ======================
-        # ADD ORDER (AWAL)
-        # ======================
+        # ================= LAYOUT URUTAN =================
         self.root.add_widget(self.input)
         self.root.add_widget(self.enter_btn)
         self.root.add_widget(self.title)
         self.root.add_widget(self.clear_btn)
         self.root.add_widget(self.scroll)
 
-    # ======================
-    # MOVE INPUT KE BAWAH
-    # ======================
-    def move_input_to_bottom(self):
-
-        self.root.remove_widget(self.input)
-        self.root.remove_widget(self.enter_btn)
-
-        self.root.add_widget(self.input)
-        self.root.add_widget(self.enter_btn)
-
-    # ======================
-    # PROCESS SIGNAL
-    # ======================
+    # ================= PROCESS INPUT =================
     def process_signal(self, instance):
 
         raw = self.input.text.upper().strip()
@@ -123,21 +92,16 @@ class Martingale(Screen):
             else:
                 i += 1
 
-        # 🔥 PINDAHKAN INPUT KE BAWAH SETELAH INPUT
-        self.move_input_to_bottom()
-
-    # ======================
-    # ADD ROW
-    # ======================
+    # ================= ADD ROW =================
     def add_row(self, time, signal):
 
         row = BoxLayout(
             size_hint_y=None,
             height=dp(48),
-            spacing=dp(6),
-            padding=(dp(4), dp(4))
+            spacing=dp(6)
         )
 
+        # border neon
         with row.canvas.after:
             Color(0, 0.8, 1, 1)
             line = Line(
@@ -145,23 +109,21 @@ class Martingale(Screen):
                 width=1.2
             )
 
-        def update_line(inst, *args):
-            line.rounded_rectangle = (
-                inst.x,
-                inst.y,
-                inst.width,
-                inst.height,
-                dp(8)
-            )
+        def update(*a):
+            line.rounded_rectangle = (row.x, row.y, row.width, row.height, dp(8))
 
-        row.bind(pos=update_line, size=update_line)
+        row.bind(pos=update, size=update)
 
-        row.add_widget(Label(text=time, size_hint_x=0.30))
-        row.add_widget(Label(text=signal, size_hint_x=0.15))
+        # TIME
+        row.add_widget(Label(text=time, size_hint_x=0.3))
 
-        color_box = BoxLayout(size_hint_x=0.18)
+        # SIGNAL
+        row.add_widget(Label(text=signal, size_hint_x=0.2))
 
-        def draw(inst, *args):
+        # COLOR BOX
+        color_box = BoxLayout(size_hint_x=0.2)
+
+        def draw(inst, *a):
             inst.canvas.before.clear()
             with inst.canvas.before:
                 if signal == "B":
@@ -174,23 +136,36 @@ class Martingale(Screen):
 
         row.add_widget(color_box)
 
+        # ================= MARTINGALE BUTTON =================
+        btn = Button(
+            text="ON",
+            size_hint_x=0.3,
+            background_color=(0, 0.8, 1, 1)
+        )
+
+        def cycle(inst):
+            if inst.text == "ON":
+                inst.text = "K1"
+            elif inst.text == "K1":
+                inst.text = "K2"
+            elif inst.text == "K2":
+                inst.text = "K3"
+            elif inst.text == "K3":
+                inst.text = "WIN"
+            elif inst.text == "WIN":
+                inst.text = "LOSS"
+            else:
+                inst.text = "ON"
+
+        btn.bind(on_press=cycle)
+
+        row.add_widget(btn)
+
         self.box.add_widget(row)
 
-    # ======================
-    # RESET ALL (BALIK KE AWAL)
-    # ======================
+    # ================= RESET =================
     def reset_all(self, instance):
 
         self.box.clear_widgets()
-
-        # 🔥 BALIKIN INPUT KE ATAS
-        self.root.clear_widgets()
-
-        self.root.add_widget(self.input)
-        self.root.add_widget(self.enter_btn)
-        self.root.add_widget(self.title)
-        self.root.add_widget(self.clear_btn)
-        self.root.add_widget(self.scroll)
-
         self.input.text = ""
         self.title.text = "WAITING SIGNAL..."
