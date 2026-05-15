@@ -133,7 +133,7 @@ class Home(Screen):
         root=BoxLayout(
             orientation="vertical",
             spacing=dp(6),
-            padding=dp(6)
+            padding=dp(6), dp(6), dp(6), dp(70)]
         )
 
         self.add_widget(root)
