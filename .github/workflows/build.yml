@@ -1,11 +1,10 @@
-name: Build APK Stable
+name: Build APK Stable (PRO)
 
 on:
   push:
     branches:
       - main
 
-# 🔥 WAJIB: FIX ERROR 403 RELEASE
 permissions:
   contents: write
 
@@ -13,25 +12,38 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
+
       # ======================
-      # CHECKOUT SOURCE CODE
+      # CHECKOUT
       # ======================
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       # ======================
       # SETUP PYTHON
       # ======================
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       # ======================
+      # CACHE PIP (BIAR CEPAT & STABIL)
+      # ======================
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ runner.os }}
+
+      # ======================
       # SETUP JAVA
       # ======================
-      - name: Set up Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,14 +52,16 @@ jobs:
       # ======================
       # SYSTEM DEPENDENCIES
       # ======================
-      - name: Install system dependencies
+      - name: Install system packages
         run: |
           sudo apt update
           sudo apt install -y \
           git zip unzip wget curl \
           build-essential python3-pip \
           openjdk-17-jdk autoconf libtool pkg-config \
-          libffi-dev libssl-dev ccache
+          libffi-dev libssl-dev ccache \
+          zlib1g-dev libncurses5-dev libncursesw5-dev \
+          libsqlite3-dev libreadline-dev libbz2-dev liblzma-dev
 
       # ======================
       # PYTHON DEPENDENCIES
@@ -55,41 +69,43 @@ jobs:
       - name: Install Python tools
         run: |
           python -m pip install --upgrade pip
-          pip install buildozer cython==0.29.33
+          pip install --upgrade setuptools wheel virtualenv cython
+          pip install buildozer
 
       # ======================
-      # CLEAN PROJECT
+      # CLEAN FULL BUILD
       # ======================
-      - name: Clean build folder
+      - name: Clean build environment
         run: |
           rm -rf .buildozer
           rm -rf bin
+          rm -rf ~/.buildozer
 
       # ======================
-      # BUILD APK (BUILD OLEH BUILDOZER)
+      # BUILD APK
       # ======================
       - name: Build APK
         run: |
-          buildozer -v android debug
+          buildozer android debug
 
       # ======================
-      # UPLOAD APK ARTIFACT
+      # UPLOAD ARTIFACT
       # ======================
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: APK
           path: bin/*.apk
 
       # ======================
-      # CREATE GITHUB RELEASE
+      # RELEASE APK
       # ======================
-      - name: Create GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/heads/main')
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: AI Signal Release v1.0.${{ github.run_number }}
+          name: STC AI SIGNAL v1.0.${{ github.run_number }}
           files: bin/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
