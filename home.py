@@ -206,7 +206,8 @@ class Home(Screen):
         self.signal_card.add_widget(
 
             Label(
-                text="SIGNAL KONFIGURATION"
+    text="SIGNAL REALTIME KONFIGURATION",
+    bold=True
             )
 
         )
@@ -425,7 +426,7 @@ class Home(Screen):
             if expired:
 
                 self.timer.text=(
-                    "TIMER : EXPIRED"
+                    "TIMER : MENUNGGU SIGNAL"
                 )
 
             else:
