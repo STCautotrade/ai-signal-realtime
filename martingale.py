@@ -81,12 +81,12 @@ class Martingale(Screen):
         self.root.add_widget(self.scroll)
 
     # ======================
-    # HIDE INPUT UI
+    # HIDE INPUT UI (FIXED)
     # ======================
     def hide_input_ui(self):
-        self.input.height = 0
-        self.enter_btn.height = 0
-        self.clear_btn.height = 0
+        self.input.disabled = True
+        self.enter_btn.disabled = True
+        self.clear_btn.disabled = True
 
     # ======================
     # PROCESS INPUT
@@ -115,7 +115,7 @@ class Martingale(Screen):
                 i += 1
 
     # ======================
-    # ADD ROW (UI FIX ONLY)
+    # ADD ROW
     # ======================
     def add_row(self, time, signal):
 
@@ -126,7 +126,6 @@ class Martingale(Screen):
             padding=(dp(4), dp(4))
         )
 
-        # NEON BORDER
         with row.canvas.after:
             Color(0, 0.8, 1, 1)
             line = Line(
@@ -145,7 +144,6 @@ class Martingale(Screen):
 
         row.bind(pos=update_line, size=update_line)
 
-        # TIME
         row.add_widget(Label(
             text=time,
             bold=True,
@@ -154,7 +152,6 @@ class Martingale(Screen):
             color=(1, 1, 1, 1)
         ))
 
-        # B / S
         row.add_widget(Label(
             text=signal,
             bold=True,
@@ -163,7 +160,6 @@ class Martingale(Screen):
             color=(1, 1, 1, 1)
         ))
 
-        # COLOR BOX (FIX SIZE BIAR TIDAK GEDE)
         color_box = BoxLayout(
             size_hint_x=0.18,
             padding=dp(2)
@@ -182,7 +178,6 @@ class Martingale(Screen):
 
         row.add_widget(color_box)
 
-        # ACTION BOX
         action_box = BoxLayout(
             size_hint_x=0.37,
             spacing=dp(3)
@@ -228,11 +223,15 @@ class Martingale(Screen):
         self.box.add_widget(row)
 
     # ======================
-    # RESET ALL
+    # RESET ALL (FIXED)
     # ======================
     def reset_all(self, instance):
 
         self.box.clear_widgets()
+
+        self.input.disabled = False
+        self.enter_btn.disabled = False
+        self.clear_btn.disabled = False
 
         self.input.height = dp(120)
         self.enter_btn.height = dp(55)
@@ -240,3 +239,6 @@ class Martingale(Screen):
 
         self.input.text = ""
         self.title.text = "WAITING SIGNAL..."
+
+        # force refresh layout biar langsung respon
+        self.root.do_layout()
