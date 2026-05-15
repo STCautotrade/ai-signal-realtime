@@ -17,16 +17,16 @@ from api import fetch_signal
 BASE_DIR = os.path.dirname(__file__)
 
 
-# ===================================
-# CARD NEON
-# ===================================
+# =========================
+# CARD
+# =========================
 
 class Card(BoxLayout):
 
     def __init__(
         self,
-        bg=(0.08,0.08,0.12,1),
-        border=(0.2,0.7,1,1),
+        bg=(0.18,0.18,0.18,1),
+        border=(0,0.8,1,1),
         h=70,
         **kw
     ):
@@ -34,10 +34,13 @@ class Card(BoxLayout):
         super().__init__(**kw)
 
         self.orientation="vertical"
+
         self.padding=dp(6)
+
         self.spacing=dp(4)
 
         self.size_hint_y=None
+
         self.height=dp(h)
 
         with self.canvas.before:
@@ -45,7 +48,7 @@ class Card(BoxLayout):
             self.bg=Color(*bg)
 
             self.rect=RoundedRectangle(
-                radius=[18]
+                radius=[16]
             )
 
         with self.canvas.after:
@@ -53,7 +56,7 @@ class Card(BoxLayout):
             self.border=Color(*border)
 
             self.line=Line(
-                rounded_rectangle=(0,0,0,0,18),
+                rounded_rectangle=(0,0,0,0,16),
                 width=1.3
             )
 
@@ -74,8 +77,7 @@ class Card(BoxLayout):
             self.y,
             self.width,
             self.height,
-            18
-
+            16
         )
 
 
@@ -85,26 +87,31 @@ class Card(BoxLayout):
 
 
 
-# ===================================
+# =========================
 # HISTORY
-# ===================================
+# =========================
 
 class HistoryRow(Card):
 
-    def __init__(self,text,color):
+    def __init__(
+        self,
+        text,
+        color,
+        bg
+    ):
 
         super().__init__(
             h=40,
-            bg=(0.05,0.08,0.12,1)
+            bg=bg
         )
 
         lbl=Label(
 
             text=text,
 
-            font_size=dp(10),
+            color=color,
 
-            color=color
+            font_size=dp(10)
 
         )
 
@@ -112,31 +119,39 @@ class HistoryRow(Card):
 
 
 
-# ===================================
+# =========================
 # HOME
-# ===================================
+# =========================
 
 class Home(Screen):
+
 
     def __init__(self,**kw):
 
         super().__init__(**kw)
 
         self.history=[]
+
         self.last=""
+
         self.expiry_time=None
 
+
         root=BoxLayout(
+
             orientation="vertical",
+
             spacing=dp(6),
+
             padding=dp(6)
+
         )
 
         self.add_widget(root)
 
 
         # =====================
-        # PNG TITLE
+        # PNG
         # =====================
 
         root.add_widget(
@@ -198,12 +213,13 @@ class Home(Screen):
         )
 
         self.clock=Label(
-            text="00:00:00"
+            text="00:00:00 WIB"
         )
 
         jam.add_widget(
             self.clock
         )
+
 
         row.add_widget(
             market
@@ -214,42 +230,36 @@ class Home(Screen):
         )
 
         root.add_widget(
-            row)
+            row
+        )
 
 
         # =====================
-        # SIGNAL
+        # SIGNAL AREA
         # =====================
 
         self.signal_card=Card(
-            h=155
+            h=150,
+            bg=(0.35,0.35,0.35,1)
         )
 
 
-        title=Label(
+        self.signal_card.add_widget(
 
-            text="SIGNAL AREA ( KONFIGURATION SIGNAL )",
+            Label(
 
-            bold=True
+                text="SIGNAL AREA ( KONFIGURATION SIGNAL )",
+
+                bold=True
+
+            )
 
         )
+
 
         self.signal_text=Label(
 
-            text="MENUNGGU SIGNAL",
-
-            halign="center"
-
-        )
-
-        self.signal_text.bind(
-
-            width=lambda s,w:
-            setattr(
-                s,
-                "text_size",
-                (w-20,None)
-            )
+            text="MENUNGGU SIGNAL"
 
         )
 
@@ -260,10 +270,6 @@ class Home(Screen):
 
         )
 
-
-        self.signal_card.add_widget(
-            title
-        )
 
         self.signal_card.add_widget(
             self.signal_text
@@ -285,7 +291,9 @@ class Home(Screen):
         timer=Card(h=55)
 
         self.timer=Label(
+
             text="TIMER: MENUNGGU SIGNAL"
+
         )
 
         timer.add_widget(
@@ -304,9 +312,13 @@ class Home(Screen):
         root.add_widget(
 
             Label(
+
                 text="HISTORY HEADER",
+
                 size_hint_y=None,
+
                 height=dp(20)
+
             )
 
         )
@@ -360,10 +372,6 @@ class Home(Screen):
         )
 
 
-    # =====================
-    # JAM HP
-    # =====================
-
     def update_clock(self,dt):
 
         self.clock.text=(
@@ -372,10 +380,6 @@ class Home(Screen):
             )
         )
 
-
-    # =====================
-    # TIMER
-    # =====================
 
     def update_timer(self,dt):
 
@@ -388,26 +392,21 @@ class Home(Screen):
             return
 
 
-        sec=int(
+        s=int(
             (
                 self.expiry_time-
                 datetime.now()
             ).total_seconds()
         )
 
-
-        if sec<0:
-            sec=0
+        if s<0:
+            s=0
 
 
         self.timer.text=(
-            f"TIMER: {sec}s"
+            f"TIMER: {s}s"
         )
 
-
-    # =====================
-    # API
-    # =====================
 
     def load(self,dt):
 
@@ -435,23 +434,13 @@ class Home(Screen):
             )
 
             self.expiry_time=(
-
                 datetime.now().replace(
-
                     hour=h,
-
                     minute=m,
-
                     second=0
-
                 )
-
                 +
-
-                timedelta(
-                    minutes=1
-                )
-
+                timedelta(minutes=1)
             )
 
         except:
@@ -461,45 +450,61 @@ class Home(Screen):
         if signal=="BUY":
 
             self.signal_card.set_bg(
-                (0,0.6,0,.35)
+                (0,0.7,0,1)
             )
 
             self.signal_text.text=(
-
                 f"SIGNAL: ENTRY BUY DI JAM {entry}"
-
             )
 
             color=(0,1,0,1)
+
+            history_bg=(
+                0,
+                0.6,
+                0,
+                .25
+            )
 
 
         elif signal=="SELL":
 
             self.signal_card.set_bg(
-                (0.6,0,0,.35)
+                (0.8,0,0,1)
             )
 
             self.signal_text.text=(
-
                 f"SIGNAL: ENTRY SELL DI JAM {entry}"
-
             )
 
             color=(1,0,0,1)
 
+            history_bg=(
+                0.8,
+                0,
+                0,
+                .25
+            )
+
+
         else:
 
             self.signal_card.set_bg(
-                (0.08,0.08,0.12,1)
+                (.35,.35,.35,1)
             )
 
             self.signal_text.text=(
-
                 "SIGNAL BUY BERAKHIR / SIGNAL SELL BERAKHIR"
-
             )
 
             color=(1,1,1,1)
+
+            history_bg=(
+                .35,
+                .35,
+                .35,
+                .25
+            )
 
 
         self.status.text=(
@@ -525,15 +530,14 @@ class Home(Screen):
 
                 HistoryRow(
                     hist,
-                    color
+                    color,
+                    history_bg
                 ),
 
                 index=0
             )
 
 
-            if len(
-                self.history
-            )>100:
+            if len(self.history)>100:
 
                 self.history.pop()
