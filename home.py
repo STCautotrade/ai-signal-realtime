@@ -85,13 +85,12 @@ class Card(BoxLayout):
 
 
     def set_bg(self,c):
-
         self.bg.rgba=c
 
 
 
 # =========================
-# HISTORY
+# HISTORY ROW
 # =========================
 
 class HistoryRow(Card):
@@ -128,7 +127,6 @@ class Home(Screen):
 
         super().__init__(**kw)
 
-        self.history=[]
         self.saved=""
 
 
@@ -153,6 +151,7 @@ class Home(Screen):
                 ),
 
                 size_hint_y=None,
+
                 height=dp(90)
 
             )
@@ -172,11 +171,9 @@ class Home(Screen):
         market=Card(h=55)
 
         market.add_widget(
-
             Label(
                 text="CRYPTO IDX 85%"
             )
-
         )
 
 
@@ -191,29 +188,18 @@ class Home(Screen):
         )
 
 
-        row.add_widget(
-            market
-        )
+        row.add_widget(market)
+        row.add_widget(jam)
 
-        row.add_widget(
-            jam
-        )
-
-        root.add_widget(
-            row
-        )
+        root.add_widget(row)
 
 
         # SIGNAL
 
         self.signal_card=Card(
-
             h=160,
-
             radius=35,
-
             bg=(0.5,0.5,0.5,1)
-
         )
 
 
@@ -229,7 +215,6 @@ class Home(Screen):
         self.signal_text=Label(
             text="SIGNAL EXPIRED"
         )
-
 
         self.signal_status=Label(
             text="WAITING"
@@ -262,7 +247,8 @@ class Home(Screen):
         )
 
         root.add_widget(
-            timer )
+            timer
+        )
 
 
         # HISTORY
@@ -285,17 +271,23 @@ class Home(Screen):
 
 
         self.history_box=BoxLayout(
+
             orientation="vertical",
+
             spacing=dp(4),
+
             size_hint_y=None
+
         )
 
 
         self.history_box.bind(
+
             minimum_height=
             self.history_box.setter(
                 "height"
             )
+
         )
 
 
@@ -348,6 +340,7 @@ class Home(Screen):
 
         self.saved=text
 
+
         self.history_box.add_widget(
 
             HistoryRow(
@@ -356,6 +349,7 @@ class Home(Screen):
             ),
 
             index=0
+
         )
 
 
@@ -395,23 +389,58 @@ class Home(Screen):
                 entry.split(":")
             )
 
-            current_minutes=(
-                now.hour*60+
-                now.minute
+            now_sec=(
+                now.hour*3600+
+                now.minute*60+
+                now.second
             )
 
-            entry_minutes=(
-                h*60+m
+            expire_sec=(
+                h*3600+
+                m*60+
+                60
             )
 
-            expired=(
-                current_minutes>=
-                entry_minutes+1
+            remain=(
+                expire_sec-
+                now_sec
             )
+
+            expired=remain<=0
+
+            if remain<0:
+                remain=0
 
         except:
 
+            remain=0
             expired=False
+
+
+        if signal in [
+            "BUY",
+            "SELL"
+        ]:
+
+            if expired:
+
+                self.timer.text=(
+                    "TIMER : EXPIRED"
+                )
+
+            else:
+
+                self.timer.text=(
+
+                    f"TIMER : {remain}s"
+
+                )
+
+        else:
+
+            self.timer.text=(
+                "MENUNGGU SIGNAL"
+            )
 
 
         # BUY
@@ -436,10 +465,9 @@ class Home(Screen):
 
                     f"SIGNAL BUY {entry} BERAKHIR",
 
-                    (0,0.5,0,0.4)
+                    (0,0.4,0,0.5)
 
                 )
-
 
             else:
 
@@ -465,9 +493,7 @@ class Home(Screen):
             if expired:
 
                 self.signal_text.text=(
-
                     "SIGNAL SELL EXPIRED"
-
                 )
 
                 self.signal_status.text=(
@@ -482,10 +508,9 @@ class Home(Screen):
 
                     f"SIGNAL SELL {entry} BERAKHIR",
 
-                    (0.5,0,0,0.4)
+                    (0.5,0,0,0.5)
 
                 )
-
 
             else:
 
@@ -501,4 +526,4 @@ class Home(Screen):
 
                 self.signal_card.set_bg(
                     (.8,0,0,1)
-        )
+    )
