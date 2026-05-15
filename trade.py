@@ -1,25 +1,18 @@
-import webbrowser
-from kivy.uix.screenmanager import Screen
-from kivy.uix.button import Button
+from kivy_garden.webview import WebView
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.popup import Popup
 
+import kivy
 
-class Trade(Screen):
+def open_trade_webview():
+    layout = BoxLayout()
 
-    def __init__(self, **kw):
-        super().__init__(**kw)
+    web = WebView(url="https://stockity.com")
+    layout.add_widget(web)
 
-        layout = BoxLayout(orientation="vertical")
-
-        btn = Button(
-            text="OPEN STC BROKER",
-            font_size=20
-        )
-
-        btn.bind(on_press=self.open_site)
-
-        layout.add_widget(btn)
-        self.add_widget(layout)
-
-    def open_site(self, instance):
-        webbrowser.open("https://stcbroker.id")
+    popup = Popup(
+        title="TRADE",
+        content=layout,
+        size_hint=(1, 1)
+    )
+    popup.open()
