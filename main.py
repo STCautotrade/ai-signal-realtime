@@ -35,15 +35,15 @@ class MainApp(App):
         # ======================
         nav = BoxLayout(
             size_hint_y=None,
-            height=dp(80),
-            spacing=dp(10),
-            padding=dp(10)
+            height=dp(60),
+            spacing=dp(4),
+            padding=dp(4)
         )
 
         def make_btn(text, color):
             return Button(
                 text=text,
-                font_size=dp(16),
+                font_size=dp(12),
                 bold=True,
                 background_normal="",
                 background_color=color,
