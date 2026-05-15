@@ -14,7 +14,7 @@ from kivy.uix.scrollview import ScrollView
 from api import fetch_signal
 
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR=os.path.dirname(__file__)
 
 
 # =========================
@@ -85,6 +85,7 @@ class Card(BoxLayout):
 
 
     def set_bg(self,c):
+
         self.bg.rgba=c
 
 
@@ -97,20 +98,23 @@ class HistoryRow(Card):
 
     def __init__(
         self,
-        text
+        text,
+        color
     ):
 
         super().__init__(
             h=38,
-            bg=(0.1,0.1,0.1,1)
+            bg=color
         )
 
-        lbl=Label(
-            text=text,
-            font_size=dp(10)
-        )
+        self.add_widget(
 
-        self.add_widget(lbl)
+            Label(
+                text=text,
+                font_size=dp(10)
+            )
+
+        )
 
 
 
@@ -125,28 +129,19 @@ class Home(Screen):
         super().__init__(**kw)
 
         self.history=[]
-
-        self.last_signal=""
-
-        self.expired_type=""
+        self.saved=""
 
 
         root=BoxLayout(
-
             orientation="vertical",
-
             spacing=dp(6),
-
             padding=dp(6)
-
         )
 
         self.add_widget(root)
 
 
-        # =========================
         # PNG
-        # =========================
 
         root.add_widget(
 
@@ -158,7 +153,6 @@ class Home(Screen):
                 ),
 
                 size_hint_y=None,
-
                 height=dp(90)
 
             )
@@ -166,18 +160,12 @@ class Home(Screen):
         )
 
 
-        # =========================
-        # TOP 2 KOLOM
-        # =========================
+        # TOP CARD
 
         row=BoxLayout(
-
             spacing=dp(6),
-
             size_hint_y=None,
-
             height=dp(55)
-
         )
 
 
@@ -216,45 +204,37 @@ class Home(Screen):
         )
 
 
-        # =========================
-        # SIGNAL BESAR
-        # =========================
+        # SIGNAL
 
         self.signal_card=Card(
 
-            h=155,
+            h=160,
 
-            bg=(0.5,0.5,0.5,1),
+            radius=35,
 
-            radius=35
-
-        )
-
-
-        title=Label(
-
-            text="SIGNAL KONFIGURATION"
-
-        )
-
-
-        self.signal_text=Label(
-
-            text="SIGNAL EXPIRED"
-
-        )
-
-
-        self.signal_status=Label(
-
-            text="WAITING"
+            bg=(0.5,0.5,0.5,1)
 
         )
 
 
         self.signal_card.add_widget(
-            title
+
+            Label(
+                text="SIGNAL KONFIGURATION"
+            )
+
         )
+
+
+        self.signal_text=Label(
+            text="SIGNAL EXPIRED"
+        )
+
+
+        self.signal_status=Label(
+            text="WAITING"
+        )
+
 
         self.signal_card.add_widget(
             self.signal_text
@@ -269,9 +249,7 @@ class Home(Screen):
         )
 
 
-        # =========================
         # TIMER
-        # =========================
 
         timer=Card(h=50)
 
@@ -284,51 +262,40 @@ class Home(Screen):
         )
 
         root.add_widget(
-            timer
-        )
+            timer )
 
 
-        # =========================
         # HISTORY
-        # =========================
 
         root.add_widget(
 
             Label(
-
-                text="HISTORY HEADER",
-
+                text="HISTORY SIGNAL",
                 size_hint_y=None,
-
                 height=dp(22)
-
             )
 
         )
 
 
-        scroll=ScrollView()
+        scroll=ScrollView(
+            size_hint_y=None,
+            height=dp(300)
+        )
 
 
         self.history_box=BoxLayout(
-
             orientation="vertical",
-
             spacing=dp(4),
-
             size_hint_y=None
-
         )
 
 
         self.history_box.bind(
-
             minimum_height=
-
             self.history_box.setter(
                 "height"
             )
-
         )
 
 
@@ -353,35 +320,64 @@ class Home(Screen):
 
 
     # =========================
-    # JAM HP
-    # =========================
 
-    def update_clock(self,dt):
-
-        now=datetime.now()
+    def update_clock(
+        self,
+        dt
+    ):
 
         self.clock.text=(
-            now.strftime(
+
+            datetime.now().strftime(
                 "%H:%M:%S WIB"
             )
+
         )
 
 
     # =========================
-    # API SIGNAL
+
+    def add_history(
+        self,
+        text,
+        color
+    ):
+
+        if text==self.saved:
+            return
+
+        self.saved=text
+
+        self.history_box.add_widget(
+
+            HistoryRow(
+                text,
+                color
+            ),
+
+            index=0
+        )
+
+
+        while len(
+            self.history_box.children
+        )>100:
+
+            self.history_box.remove_widget(
+                self.history_box.children[-1]
+            )
+
+
     # =========================
 
     def load(self,dt):
 
         data=fetch_signal()
 
-        signal=(
-            data.get(
-                "signal",
-                "WAITING"
-            )
-            .upper()
-        )
+        signal=data.get(
+            "signal",
+            "WAITING"
+        ).upper()
 
         entry=data.get(
             "entry_time",
@@ -389,16 +385,40 @@ class Home(Screen):
         )
 
 
-        current=datetime.now().strftime(
-            "%H:%M"
-        )
+        now=datetime.now()
 
 
-        # ========= BUY
+        try:
+
+            h,m=map(
+                int,
+                entry.split(":")
+            )
+
+            current_minutes=(
+                now.hour*60+
+                now.minute
+            )
+
+            entry_minutes=(
+                h*60+m
+            )
+
+            expired=(
+                current_minutes>=
+                entry_minutes+1
+            )
+
+        except:
+
+            expired=False
+
+
+        # BUY
 
         if signal=="BUY":
 
-            if current>entry:
+            if expired:
 
                 self.signal_text.text=(
                     "SIGNAL BUY EXPIRED"
@@ -411,6 +431,15 @@ class Home(Screen):
                 self.signal_card.set_bg(
                     (.5,.5,.5,1)
                 )
+
+                self.add_history(
+
+                    f"SIGNAL BUY {entry} BERAKHIR",
+
+                    (0,0.5,0,0.4)
+
+                )
+
 
             else:
 
@@ -429,11 +458,11 @@ class Home(Screen):
                 )
 
 
-        # ========= SELL
+        # SELL
 
         elif signal=="SELL":
 
-            if current>entry:
+            if expired:
 
                 self.signal_text.text=(
 
@@ -448,6 +477,15 @@ class Home(Screen):
                 self.signal_card.set_bg(
                     (.5,.5,.5,1)
                 )
+
+                self.add_history(
+
+                    f"SIGNAL SELL {entry} BERAKHIR",
+
+                    (0.5,0,0,0.4)
+
+                )
+
 
             else:
 
