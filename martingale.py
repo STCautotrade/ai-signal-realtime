@@ -81,7 +81,6 @@ class Martingale(Screen):
 
         self.input_mode = False
 
-        # hide input & enter
         self.input.height = 0
         self.enter_btn.height = 0
 
@@ -129,19 +128,39 @@ class Martingale(Screen):
         # SIGNAL
         row.add_widget(Label(text=signal, size_hint_x=0.2))
 
-        # COLOR BOX
-        color_box = BoxLayout(size_hint_x=0.2)
+        # ================= COLOR + ARROW (FIX ONLY HERE) =================
+        color_box = BoxLayout(
+            size_hint_x=0.2,
+            orientation="vertical"
+        )
+
+        # PANAH + WARNA
+        if signal == "B":
+            arrow = "⬆"
+            color = (0, 1, 0, 1)
+        else:
+            arrow = "⬇"
+            color = (1, 0, 0, 1)
+
+        color_box.add_widget(Label(
+            text=arrow,
+            font_size=dp(16),
+            bold=True,
+            size_hint_y=0.4,
+            color=(1, 1, 1, 1)
+        ))
+
+        color_area = BoxLayout(size_hint_y=0.6)
 
         def draw(inst, *a):
             inst.canvas.before.clear()
             with inst.canvas.before:
-                if signal == "B":
-                    Color(0, 1, 0, 1)
-                else:
-                    Color(1, 0, 0, 1)
+                Color(*color)
                 Rectangle(pos=inst.pos, size=inst.size)
 
-        color_box.bind(pos=draw, size=draw)
+        color_area.bind(pos=draw, size=draw)
+
+        color_box.add_widget(color_area)
 
         row.add_widget(color_box)
 
@@ -179,7 +198,6 @@ class Martingale(Screen):
 
         self.input_mode = True
 
-        # show input again
         self.input.height = dp(100)
         self.enter_btn.height = dp(50)
 
